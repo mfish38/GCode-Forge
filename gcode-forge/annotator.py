@@ -35,7 +35,7 @@ def annotate(gcode: GCodeFile):
                     ba_bc_norm = ba_norm * bc_norm
 
                     if ba_bc_norm == 0:
-                        angle = None
+                        angle_deg = None
                     else:
                         angle_rads = math.acos(
                             np.clip(
