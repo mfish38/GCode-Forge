@@ -13,3 +13,7 @@ Add the following to "Post-processing Scripts" on the "Other" settings tab.
 Example:
 
     "C:\Users\blend\AppData\Local\Programs\Python\Python310\python.exe" -m gcode-forge
+
+# Configuration
+
+Configuration will eventually be done using config files. Currently all configuration is done by modifying them in `gcode-forge/__main__.py`
