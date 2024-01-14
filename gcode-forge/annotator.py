@@ -10,6 +10,8 @@ np.seterr('raise')
 
 # Assumes relative extrusion
 
+# TODO: vectorize. Will need to track line number associations and re-associate
+
 def annotate(gcode: GCodeFile):
     filament_diameter = 1.75
     previous_pos = np.array([float('NaN'), float('NaN')])
@@ -30,6 +32,8 @@ def annotate(gcode: GCodeFile):
 
                 bc_norm = np.linalg.norm(bc)
                 if bc_norm:
+                    line.metadata['start_pos'] = current_pos
+                    line.metadata['end_pos'] = new_pos
                     line.metadata['distance_mm'] = bc_norm
 
                     ba_bc_norm = ba_norm * bc_norm

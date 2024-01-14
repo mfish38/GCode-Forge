@@ -7,6 +7,9 @@ class Line:
     Represents a file line.
     '''
     def __init__(self, text):
+        # For tracking info about the line.
+        self.metadata = {}
+
         parts = text.split(';', 1)
 
         if len(parts) == 2:
@@ -41,9 +44,6 @@ class Line:
 
         self.params = params
         self.eqparams = eqparams
-
-        # For tracking info about the line.
-        self.metadata = {}
 
     def __repr__(self):
         return f'<Line {self}>'
