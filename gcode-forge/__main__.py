@@ -3,11 +3,13 @@ from pathlib import Path
 from importlib import import_module
 
 from . import parser
+from . import annotator
 
 path = Path(sys.argv[1])
 
 text = path.read_text()
 gcode = parser.parse(text)
+annotator.annotate(gcode)
 
 SHELL_PA = 0.62
 INFILL_PA = 0.28
@@ -29,7 +31,7 @@ processors = {
         }
     },
 
-    # Note: speed based LUT is experimental
+    # Note: speed based LUT is experimental. Also does not account for line width and acceleration.
     # 'speed_lut_pa': {
     #     'speeds': [100, 150, 200, 250, 300],
     #     'pa_values': [0.62, 0.48, 0.36, 0.292, 0.28]
@@ -42,5 +44,5 @@ for processor_name, options in processors.items():
 
 output = str(gcode)
 
-# print(output)
-path.write_text(output, newline='\n', encoding='UTF-8')
+print(output)
+# path.write_text(output, newline='\n', encoding='UTF-8')

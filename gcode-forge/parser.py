@@ -3,11 +3,14 @@ from itertools import chain
 from dataclasses import dataclass
 
 class Line:
+    '''
+    Represents a file line.
+    '''
     def __init__(self, text):
         parts = text.split(';', 1)
 
         if len(parts) == 2:
-            self.comment = ';' + parts[1]
+            self.comment = parts[1]
         else:
             self.comment = None
 
@@ -39,14 +42,8 @@ class Line:
         self.params = params
         self.eqparams = eqparams
 
-    def point(self):
-        if not self.params:
-            return None
-
-        if 'X' in self.params and 'Y' in self.params:
-            return self.params['X'], self.params['Y']
-
-        return None
+        # For tracking info about the line.
+        self.metadata = {}
 
     def __repr__(self):
         return f'<Line {self}>'
@@ -56,7 +53,7 @@ class Line:
             self.code,
             *(f'{k}{v}' for k, v in self.params.items()),
             *(f'{k}={v}' for k, v in self.eqparams.items()),
-            self.comment,
+            f';{self.comment}' if self.comment else '',
         ]
         return ' '.join(x for x in parts if x is not None)
 
