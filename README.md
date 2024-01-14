@@ -16,4 +16,4 @@ Example:
 
 # Configuration
 
-Configuration will eventually be done using config files. Currently all configuration is done by modifying them in `gcode-forge/__main__.py`
+Configuration will eventually be done using config files. Currently all configuration is done by modifying the data structures in `gcode-forge/__main__.py`
