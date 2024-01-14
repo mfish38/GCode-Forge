@@ -30,14 +30,14 @@ def annotate(gcode: GCodeFile):
 
                 bc_norm = np.linalg.norm(bc)
                 if bc_norm:
-                    line.metadata['distance'] = bc_norm
+                    line.metadata['distance_mm'] = bc_norm
 
                     ba_bc_norm = ba_norm * bc_norm
 
                     if ba_bc_norm == 0:
                         angle = None
                     else:
-                        angle = math.acos(
+                        angle_rads = math.acos(
                             np.clip(
                                 np.dot(ba, bc)
                                 / ba_bc_norm,
@@ -45,7 +45,8 @@ def annotate(gcode: GCodeFile):
                                 1
                             )
                         )
-                    line.metadata['angle'] = angle
+                        angle_deg = angle_rads * 180 / math.pi
+                    line.metadata['angle_deg'] = angle_deg
 
                     previous_pos = current_pos
                     current_pos = new_pos

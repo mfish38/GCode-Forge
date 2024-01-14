@@ -44,5 +44,5 @@ for processor_name, options in processors.items():
 
 output = str(gcode)
 
-print(output)
-# path.write_text(output, newline='\n', encoding='UTF-8')
+path.write_text(output, newline='\n', encoding='UTF-8')
+# Path('out.gcode').write_text(output, newline='\n', encoding='UTF-8')
