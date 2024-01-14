@@ -24,7 +24,7 @@ def annotate(gcode: GCodeFile):
                     float(line.params.get('Y', current_pos[1])),
                 ])
 
-                # a->b->c
+                # a<-b->c
                 ba = previous_pos - current_pos
                 bc = new_pos - current_pos
 
