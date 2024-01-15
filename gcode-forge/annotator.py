@@ -35,6 +35,7 @@ def annotate(gcode: GCodeFile):
                 line.metadata['start_pos'] = current_pos
                 line.metadata['end_pos'] = new_pos
                 line.metadata['distance_mm'] = bc_norm
+                line.metadata['vector'] = bc
 
                 ba_bc_norm = ba_norm * bc_norm
 
