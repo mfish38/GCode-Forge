@@ -8,6 +8,7 @@ This is a work in progress and has bugs.
 TODO: ignore sharp angle caused by start after travel move
 check split_distance function as distance does not seem correct
 need to split_distance forward and restore feedrate
+does not appear to cut backwards when it should in some instances
 '''
 
 def apply(gcode: GCodeFile, options):
