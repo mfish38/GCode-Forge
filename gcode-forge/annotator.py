@@ -75,7 +75,29 @@ def annotate(first: Line, last: Line=None):
 
             line.metadata['extrude_mm3'] = extrude_mm3
 
-            line.comment = f'{angle_deg} {bc_norm}'
+            if bc_norm < 0.0001:
+                if extrude_distance > 0.000001:
+                    move_type = 'extrude'
+                elif extrude_distance < -0.000001:
+                    move_type = 'retract'
+                elif 'Z' in line.params:
+                    # TODO: track current z and set only if z changes?
+                    move_type = 'z'
+                elif 'F' in line.params:
+                    move_type = 'set_feed'
+                else:
+                    move_type = 'none'
+            else:
+                if extrude_distance > 0.000001:
+                    move_type = 'moving_extrude'
+                elif extrude_distance < -0.000001:
+                    move_type = 'moving_retract'
+                else:
+                    move_type = 'travel'
+
+            line.metadata['move_type'] = move_type
+
+            line.comment = move_type #f'{angle_deg} {bc_norm}'
 
         if last and line is last:
             break
