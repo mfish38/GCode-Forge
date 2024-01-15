@@ -131,6 +131,23 @@ class Section:
         if place is self.last_line:
             self.last_line = line
 
+    def remove(self, line: Line):
+        '''
+        Assumes the line given is in the section.
+        '''
+        line.section = None
+
+        if line is self.first_line and line is self.last_line:
+            self.first_line = None
+            self.last_line = None
+        elif line is self.first_line:
+            self.first_line = line.next
+        elif line is self.last_line:
+            self.last_line = line.prev
+
+        line.prev.next = line.next
+        line.next.prev = line.prev
+
     def __repr__(self):
         return f'<Section {self.section_type}>'
 
