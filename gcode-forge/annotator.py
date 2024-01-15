@@ -1,6 +1,5 @@
 
 import math
-from dataclasses import dataclass
 
 import numpy as np
 
@@ -15,7 +14,7 @@ np.seterr('raise')
 def annotate(first: Line, last: Line=None):
     filament_diameter = 1.75
 
-    if annotator_state := first.metadata.get('annotator_state'):
+    if annotator_state := first.annotation._state:
         previous_pos, current_pos, ba_norm = annotator_state
     else:
         previous_pos = np.array([float('NaN'), float('NaN')])
@@ -25,7 +24,7 @@ def annotate(first: Line, last: Line=None):
     line = first
     while True:
         # Store annotator state at the start of annotating the line so that we can restart at this line and re-annotate it.
-        line.metadata['annotator_state'] = [
+        line.annotation._state = [
             previous_pos,
             current_pos,
             ba_norm
@@ -43,10 +42,10 @@ def annotate(first: Line, last: Line=None):
 
             bc_norm = np.linalg.norm(bc)
             if bc_norm:
-                line.metadata['start_pos'] = current_pos
-                line.metadata['end_pos'] = new_pos
-                line.metadata['distance_mm'] = bc_norm
-                line.metadata['vector'] = bc
+                line.annotation.start_pos = current_pos
+                line.annotation.end_pos = new_pos
+                line.annotation.distance_mm = bc_norm
+                line.annotation.vector = bc
 
                 ba_bc_norm = ba_norm * bc_norm
 
@@ -62,7 +61,7 @@ def annotate(first: Line, last: Line=None):
                         )
                     )
                     angle_deg = angle_rads * 180 / math.pi
-                line.metadata['angle_deg'] = angle_deg
+                line.annotation.angle_deg = angle_deg
 
                 previous_pos = current_pos
                 current_pos = new_pos
@@ -73,7 +72,7 @@ def annotate(first: Line, last: Line=None):
 
             extrude_mm3 = extrude_distance * math.pi * (filament_diameter ** 2)
 
-            line.metadata['extrude_mm3'] = extrude_mm3
+            line.annotation.extrude_mm3 = extrude_mm3
 
             if bc_norm < 0.0001:
                 if extrude_distance > 0.000001:
@@ -95,7 +94,7 @@ def annotate(first: Line, last: Line=None):
                 else:
                     move_type = 'travel'
 
-            line.metadata['move_type'] = move_type
+            line.annotation.move_type = move_type
 
             line.comment = move_type #f'{angle_deg} {bc_norm}'
 

@@ -1,20 +1,35 @@
 
-from itertools import chain
 from dataclasses import dataclass
+
+import numpy as np
+
+@dataclass(slots=True)
+class Annotation:
+    _state: list = None
+    start_pos: np.array = None
+    end_pos: np.array = None
+    distance_mm: float = None
+    vector: np.array = None
+    angle_deg: float = None
+    extrude_mm3: float = None
+    move_type: str = None
 
 class Line:
     '''
     Represents a file line.
     '''
     def __init__(self, text):
+        # What section the line belongs to
         self.section = None
 
         # For tracking info about the line.
-        self.metadata = {}
+        self.annotation = Annotation()
 
+        # Linked list
         self.prev: Line = None
         self.next: Line = None
 
+        # Parse comment
         parts = text.split(';', 1)
 
         if len(parts) == 2:
@@ -22,6 +37,7 @@ class Line:
         else:
             self.comment = None
 
+        # Parse remainder
         text = parts[0].strip()
         if text == '':
             self.code = None
@@ -32,6 +48,7 @@ class Line:
         parts = text.split()
         self.code = parts[0].upper()
 
+        # Parse the parameters
         params = {}
         eqparams = {}
         for part in parts[1:]:
