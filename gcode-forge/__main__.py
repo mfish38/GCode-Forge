@@ -9,7 +9,7 @@ path = Path(sys.argv[1])
 
 text = path.read_text()
 gcode = parser.parse(text)
-annotator.annotate(gcode)
+annotator.annotate(gcode.first_section.first_line)
 
 SHELL_PA = 0.62
 INFILL_PA = 0.28
@@ -32,9 +32,16 @@ processors = {
     },
 
     # Note: speed based LUT is experimental. Also does not account for line width and acceleration.
+    # TODO: rewrite speed_lut_pa to use new linked list file representation
     # 'speed_lut_pa': {
     #     'speeds': [100, 150, 200, 250, 300],
     #     'pa_values': [0.62, 0.48, 0.36, 0.292, 0.28]
+    # }
+
+    # Experimental, incomplete hand has bugs
+    # 'flow_rate_limit_experiment': {
+    #     'sharp_angle': 60,
+    #     'cut_distance': 1
     # }
 }
 

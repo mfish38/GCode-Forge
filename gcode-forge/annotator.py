@@ -75,6 +75,8 @@ def annotate(first: Line, last: Line=None):
 
             line.metadata['extrude_mm3'] = extrude_mm3
 
+            line.comment = f'{angle_deg} {bc_norm}'
+
         if last and line is last:
             break
 
