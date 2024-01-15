@@ -1,10 +1,14 @@
 
+import numpy as np
+
 from ..parser import GCodeFile, Line
 from ..edit_utils import split_distance_back, prev_continuous_move
 
 def apply(gcode: GCodeFile, options):
-    sharp_angle = options['sharp_angle']
-    cut_distance = options['cut_distance']
+    sharp_angle = options['sharp_angle_deg']
+    step_distance = options['step_distance']
+    angle_speed = options['angle_speed_mms'] * 60
+    steps = options['steps'] + 1
     min_segment_length = 0.1
 
     current_feed_rate = None
@@ -43,13 +47,22 @@ def apply(gcode: GCodeFile, options):
 
             line.params['F'] = current_feed_rate
 
-            slow = split_distance_back(line, cut_distance, min_segment_length)
-            if slow:
-                slow.section.insert_before(slow, Line('; SLOW CUT'))
-                while slow is not line:
-                    if slow.code in ('G1', 'G0'):
-                        slow.params['F'] = 10 * 60
-                    slow = slow.next
+            feed_rates = np.linspace(angle_speed, float(current_feed_rate), steps)[:-1]
+            current_start = line
+            for feed_rate in feed_rates:
+                slow_cut = split_distance_back(current_start, step_distance, min_segment_length)
+
+                if not slow_cut:
+                    break
+
+                # slow.section.insert_before(slow, Line('; SLOW CUT'))
+                current_line = slow_cut
+                while current_line is not current_start:
+                    if current_line.code in ('G1', 'G0'):
+                        current_line.params['F'] = f'{feed_rate:.1f}'
+                    current_line = current_line.next
+
+                current_start = slow_cut
 
             if line is section.last_line:
                 break

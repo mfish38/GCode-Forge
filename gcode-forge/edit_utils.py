@@ -69,7 +69,7 @@ def split_distance_back(line: Line, distance:float, min_segment_length:float):
             return next_extrude
 
         traveled += current.annotation.distance_mm or 0
-        current.comment = (current.comment or '') + ' traveled: ' + str(traveled)
+        # current.comment = (current.comment or '') + ' traveled: ' + str(traveled)
 
     # current is now the line to cut because it caused the distance to be exceeded
     current_length = current.annotation.distance_mm
