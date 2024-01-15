@@ -9,7 +9,7 @@ def apply(gcode: GCodeFile, options):
     step_distance = options['step_distance']
     angle_speed = options['angle_speed_mms'] * 60
     steps = options['steps'] + 1
-    min_segment_length = 0.05
+    min_segment_length = 0.012
 
     current_feed_rate = None
 
@@ -56,23 +56,27 @@ def apply(gcode: GCodeFile, options):
                     break
 
                 # slow_cut.section.insert_before(slow_cut, Line('; SLOW CUT'))
+                stop = False
                 current_line = current_start.prev
                 while True:
                     if current_line.code in ('G1', 'G0'):
                         if 'F' in current_line.params:
-                            new_feed = min(feed_rate, float(current_line.params['F']))
-                        else:
-                            new_feed = feed_rate
-                        current_line.params['F'] = f'{new_feed:.1f}'
+                            current_line_feed = float(current_line.params['F'])
+                            if current_line_feed <= feed_rate:
+                                stop = True
+                                break
+
+                        current_line.params['F'] = f'{feed_rate:.1f}'
 
                     if current_line is slow_cut:
                         break
 
                     current_line = current_line.prev
 
-                current_start = slow_cut
+                if stop:
+                    break
 
-            previous_sharp_angle = line
+                current_start = slow_cut
 
             if line is section.last_line:
                 break
