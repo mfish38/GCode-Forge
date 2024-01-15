@@ -85,7 +85,7 @@ def annotate(first: Line, last: Line=None):
                 elif 'F' in line.params:
                     move_type = 'set_feed'
                 else:
-                    move_type = 'none'
+                    move_type = 'noop'
             else:
                 if extrude_distance > 0.000001:
                     move_type = 'moving_extrude'

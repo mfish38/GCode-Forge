@@ -20,7 +20,16 @@ def apply(gcode: GCodeFile, options):
     while section:
         line = section.first_line
         while True:
-            if line.metadata.get('angle_deg', 180) < sharp_angle:
+            if not (
+                line.annotation.move_type == 'moving_extrude'
+                and line.prev.annotation.move_type == 'moving_extrude'
+            ):
+                if line is section.last_line:
+                    break
+                line = line.next
+                continue
+
+            if line.annotation.angle_deg < sharp_angle:
                 section.insert_before(
                     line,
                     Line('; SHARP ANGLE')
