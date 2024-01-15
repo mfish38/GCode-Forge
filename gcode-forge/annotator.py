@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .parser import GCodeFile
+from .parser import Line
 
 np.seterr('raise')
 
@@ -12,14 +12,25 @@ np.seterr('raise')
 
 # TODO: vectorize. Will need to track line number associations and re-associate
 
-def annotate(gcode: GCodeFile):
+def annotate(first: Line, last: Line=None):
     filament_diameter = 1.75
-    previous_pos = np.array([float('NaN'), float('NaN')])
-    current_pos = np.array([float('NaN'), float('NaN')])
-    ba_norm = float('NaN')
 
-    line = gcode.first_section.first_line
+    if annotator_state := first.metadata.get('annotator_state'):
+        previous_pos, current_pos, ba_norm = annotator_state
+    else:
+        previous_pos = np.array([float('NaN'), float('NaN')])
+        current_pos = np.array([float('NaN'), float('NaN')])
+        ba_norm = float('NaN')
+
+    line = first
     while True:
+        # Store annotator state at the start of annotating the line so that we can restart at this line and re-annotate it.
+        line.metadata['annotator_state'] = [
+            previous_pos,
+            current_pos,
+            ba_norm
+        ]
+
         if line.code in ('G1', 'G0'):
             new_pos = np.array([
                 float(line.params.get('X', current_pos[0])),
@@ -63,6 +74,9 @@ def annotate(gcode: GCodeFile):
             extrude_mm3 = extrude_distance * math.pi * (filament_diameter ** 2)
 
             line.metadata['extrude_mm3'] = extrude_mm3
+
+        if last and line is last:
+            break
 
         line = line.next
         if not line:
