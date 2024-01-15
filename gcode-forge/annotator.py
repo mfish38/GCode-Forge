@@ -99,7 +99,7 @@ def annotate(first: Line, last: Line=None):
             line.annotation.move_type = move_type
 
             # line.comment = move_type
-            line.comment = f'{angle_deg:.1f} {bc_norm:.1f}'
+            # line.comment = f'{angle_deg:.1f} {bc_norm:.1f}'
 
         if last and line is last:
             break

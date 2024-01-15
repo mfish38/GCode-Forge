@@ -2,14 +2,6 @@
 from ..parser import GCodeFile, Line
 from ..edit_utils import split_distance_back, prev_continuous_move
 
-'''
-This is a work in progress and has bugs.
-
-TODO:
-check split_distance function as distance does not seem correct
-need to split_distance forward and restore feedrate
-'''
-
 def apply(gcode: GCodeFile, options):
     sharp_angle = options['sharp_angle']
     cut_distance = options['cut_distance']
@@ -53,7 +45,7 @@ def apply(gcode: GCodeFile, options):
 
             slow = split_distance_back(line, cut_distance, min_segment_length)
             if slow:
-                slow.section.insert_before(slow.prev, Line('; SLOW CUT'))
+                slow.section.insert_before(slow, Line('; SLOW CUT'))
                 while slow is not line:
                     if slow.code in ('G1', 'G0'):
                         slow.params['F'] = 10 * 60
