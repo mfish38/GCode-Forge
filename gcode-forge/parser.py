@@ -7,6 +7,8 @@ class Line:
     Represents a file line.
     '''
     def __init__(self, text):
+        self.section = None
+
         # For tracking info about the line.
         self.metadata = {}
 
@@ -87,6 +89,8 @@ class Section:
 
         If place is None, then the section is cleared of any existing lines and initialized with the line.
         '''
+        line.section = self
+
         if place is None:
             self._set_first_line(line)
             return
@@ -109,6 +113,8 @@ class Section:
 
         If place is None, then the section is cleared of any existing lines and initialized with the line.
         '''
+        line.section = self
+
         if place is None:
             self._set_first_line(line)
             return
@@ -159,7 +165,7 @@ class GCodeFile:
 
         return '\n'.join(parts)
 
-def parse(text) -> list[Section]:
+def parse(text) -> GCodeFile:
     lines = text.splitlines()
 
     first_section = Section('start')
