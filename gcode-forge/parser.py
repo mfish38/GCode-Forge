@@ -10,6 +10,9 @@ class Line:
         # For tracking info about the line.
         self.metadata = {}
 
+        self.prev: Line = None
+        self.next: Line = None
+
         parts = text.split(';', 1)
 
         if len(parts) == 2:
@@ -51,8 +54,8 @@ class Line:
     def __str__(self):
         parts = [
             self.code,
-            *(f'{k}{v}' for k, v in self.params.items()),
-            *(f'{k}={v}' for k, v in self.eqparams.items()),
+            *(f'{k}{'' if v is None else v}' for k, v in self.params.items()),
+            *(f'{k}={'' if v is None else v}' for k, v in self.eqparams.items()),
             f';{self.comment}' if self.comment else '',
         ]
         return ' '.join(x for x in parts if x is not None)
@@ -61,45 +64,122 @@ class Line:
 @dataclass
 class Section:
     section_type: str
-    lines: list[Line]
+    first_line: Line = None
+    last_line: Line = None
+    next: 'Section' = None
+    prev: 'Section' = None
+
+    def _set_first_line(self, line: Line):
+        self.first_line = line
+        self.last_line = line
+
+        if self.prev:
+            self.prev.last_line.next = line
+            line.prev = self.prev.last_line
+
+        if self.next:
+            self.next.first_line.prev = line
+            line.next = self.next.first_line
+
+    def insert_before(self, place: Line, line: Line):
+        '''
+        Assumes the place given is in the section.
+
+        If place is None, then the section is cleared of any existing lines and initialized with the line.
+        '''
+        if place is None:
+            self._set_first_line(line)
+            return
+
+        current_prev = place.prev
+
+        line.next = place
+        line.prev = current_prev
+        place.prev = line
+
+        if current_prev:
+            current_prev.next = line
+
+        if place is self.first_line:
+            self.first_line = line
+
+    def insert_after(self, place: Line, line: Line):
+        '''
+        Assumes the place given is in the section.
+
+        If place is None, then the section is cleared of any existing lines and initialized with the line.
+        '''
+        if place is None:
+            self._set_first_line(line)
+            return
+
+        current_next = place.next
+
+        line.next = current_next
+        line.prev = place
+        place.next = line
+
+        if current_next:
+            current_next.prev = line
+
+        if place is self.last_line:
+            self.last_line = line
 
     def __repr__(self):
-        return f'<Section {self.section_type} {len(self.lines)} lines>'
+        return f'<Section {self.section_type}>'
+
+    def __str__(self):
+        current = self.first_line
+        last = self.last_line
+        parts = []
+        while current is not last:
+            parts.append(str(current))
+
+            current = current.next
+
+        parts.append(str(current))
+
+        return '\n'.join(parts)
 
 
 @dataclass
 class GCodeFile:
-    sections: list[Section]
+    first_section: Section
 
     def __repr__(self):
-        return f'<GCodeFile {len(self.sections)} sections>'
+        return f'<GCodeFile>'
 
     def __str__(self):
-        return '\n'.join(
-            str(x)
-            for x in chain.from_iterable(x.lines for x in self.sections)
-        )
+        current = self.first_section
+        parts = []
+        while current:
+            parts.append(str(current))
+
+            current = current.next
+
+        return '\n'.join(parts)
 
 def parse(text) -> list[Section]:
     lines = text.splitlines()
 
-    sections = []
-    current_type = ''
-    current_section = []
+    first_section = Section('start')
+    current_section = first_section
     for line in lines:
         if line.startswith(';TYPE:'):
-            sections.append(Section(current_type.lower(), current_section))
-            current_section = []
+            section_type = line[len(';TYPE:'):].lower()
 
-            current_type = line[len(';TYPE:'):]
+            new_section = Section(section_type)
+            new_section.prev = current_section
+            current_section.next = new_section
+            current_section = new_section
         elif line.startswith(';LAYER_CHANGE'):
-            sections.append(Section(current_type.lower(), current_section))
-            current_section = []
+            section_type = 'layer_change'
 
-            current_type = 'layer_change'
+            new_section = Section(section_type)
+            new_section.prev = current_section
+            current_section.next = new_section
+            current_section = new_section
 
-        current_section.append(Line(line))
+        current_section.insert_after(current_section.last_line, Line(line))
 
-    sections.append(Section(current_type.lower(), current_section))
-
-    return GCodeFile(sections)
+    return GCodeFile(first_section)

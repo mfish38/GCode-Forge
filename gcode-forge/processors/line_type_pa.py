@@ -5,13 +5,14 @@ def apply(gcode: GCodeFile, options):
     pa_values = options['pa_values']
 
     current_pa = options['default_pa']
-    for section in gcode.sections:
+
+    section = gcode.first_section
+    while section:
         current_pa = pa_values.get(section.section_type, current_pa)
 
-        new_lines = [
+        section.insert_before(
+            section.first_line,
             Line(f'SET_PRESSURE_ADVANCE ADVANCE={current_pa:.3f}')
-        ]
+        )
 
-        new_lines.extend(section.lines)
-
-        section.lines = new_lines
+        section = section.next

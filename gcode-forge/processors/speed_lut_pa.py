@@ -9,9 +9,10 @@ def apply(gcode: GCodeFile, options):
     min_speed = options['speeds'][0]
     max_speed = options['speeds'][-1]
 
-    for section in gcode.sections:
-        new_lines = []
-        for line in section.lines:
+    section = gcode.first_section
+    while section:
+        line = section.first_line
+        while True:
             if line.code in ('G1', 'G0') and 'F' in line.params:
                 feed_mms = float(line.params['F']) / 60
 
@@ -22,8 +23,13 @@ def apply(gcode: GCodeFile, options):
                     )
                 )
 
-                new_lines.append(Line(f'SET_PRESSURE_ADVANCE ADVANCE={new_pa:.3f}'))
+                section.insert_before(
+                    line,
+                    Line(f'SET_PRESSURE_ADVANCE ADVANCE={new_pa:.3f}')
+                )
 
-            new_lines.append(line)
+            if line is section.last_line:
+                break
+            line = line.next
 
-        section.lines = new_lines
+        section = section.next
