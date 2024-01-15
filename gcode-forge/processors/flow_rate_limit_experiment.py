@@ -4,14 +4,19 @@ from ..parser import GCodeFile, Line
 def apply(gcode: GCodeFile, options):
     sharp_angle = options['sharp_angle']
 
-    for section in gcode.sections:
-        new_lines = []
-
-        for line in section.lines:
+    section = gcode.first_section
+    while section:
+        line = section.first_line
+        while True:
             if line.metadata.get('angle_deg', 180) < sharp_angle:
-                new_lines.append(Line('; SHARP ANGLE'))
+                section.insert_before(
+                    line,
+                    Line('; SHARP ANGLE')
+                )
 
-            new_lines.append(line)
+            if line is section.last_line:
+                break
+            line = line.next
 
-        section.lines = new_lines
+        section = section.next
 
