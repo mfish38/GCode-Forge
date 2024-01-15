@@ -3,6 +3,40 @@ from copy import deepcopy
 from .parser import Section, Line
 from .annotator import annotate
 
+def next_move(move_type, line, stop=None):
+    while True:
+        line = line.next
+        if line is None:
+            break
+
+        if line.annotation.move_type == move_type:
+            return line
+
+        if line is stop:
+            break
+
+    return None
+
+def prev_continuous_move(move_type, line):
+    while True:
+        line = line.prev
+        if line is None:
+            break
+
+        if line.annotation.move_type in {
+            'extrude',
+            'retract',
+            'z',
+            'travel',
+            'moving_retract',
+        }:
+            break
+
+        if line.annotation.move_type == move_type:
+            return line
+
+    return None
+
 def split_distance_back(line: Line, distance:float, min_segment_length:float):
     '''
     Splits a previous line segment at a given distance back from the start of the given line.
@@ -27,12 +61,11 @@ def split_distance_back(line: Line, distance:float, min_segment_length:float):
             'retract',
             'z',
             'travel',
+            'moving_retract',
         }:
-            if current.next is line:
+            next_extrude = next_move('moving_extrude', current, stop=line)
+            if next_extrude is line:
                 return None
-            else:
-                # TODO: need to traverse forward to find an extrusion move instead
-                return current.next
 
         traveled += current.annotation.distance_mm or 0
 
@@ -46,7 +79,11 @@ def split_distance_back(line: Line, distance:float, min_segment_length:float):
         if a_length < b_length:
             return current
         else:
-            return current.next
+            next_extrude = next_move('moving_extrude', current, stop=line)
+            if next_extrude is line:
+                return current
+
+            return next_extrude
 
     a = Line(str(current))
     a.annotation._state = current.annotation._state

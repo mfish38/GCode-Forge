@@ -11,6 +11,8 @@ np.seterr('raise')
 
 # TODO: vectorize. Will need to track line number associations and re-associate
 
+# Annotate linked list of continuous positive extrusion?
+
 def annotate(first: Line, last: Line=None):
     filament_diameter = 1.75
 
@@ -96,7 +98,8 @@ def annotate(first: Line, last: Line=None):
 
             line.annotation.move_type = move_type
 
-            line.comment = move_type #f'{angle_deg} {bc_norm}'
+            # line.comment = move_type
+            line.comment = f'{angle_deg:.1f} {bc_norm:.1f}'
 
         if last and line is last:
             break
