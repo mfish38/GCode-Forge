@@ -17,6 +17,20 @@ def next_move(move_type, line, stop=None):
 
     return None
 
+def prev_move(move_type, line, stop=None):
+    while True:
+        line = line.prev
+        if line is None:
+            break
+
+        if line.annotation.move_type == move_type:
+            return line
+
+        if line is stop:
+            break
+
+    return None
+
 def prev_continuous_move(move_type, line):
     while True:
         line = line.prev
@@ -113,3 +127,76 @@ def split_distance_back(line: Line, distance:float, min_segment_length:float):
     annotate(a, line)
 
     return b
+
+def split_distance_forward(line: Line, distance:float, min_segment_length:float):
+    '''
+    Like split_distance_back but in the other direction.
+
+    Note that the line itself may be split as its start is the starting point
+
+    Returns the last line before the cut. Also returns the starting line that was passed in case it
+    was cut.
+    '''
+    # Travel forward
+    current = line
+    traveled = current.annotation.distance_mm or 0
+    current.comment = (current.comment or '') + ' traveled: ' + str(traveled)
+    while traveled < distance:
+        current = current.next
+
+        if current.annotation.move_type in {
+            'extrude',
+            'retract',
+            'z',
+            'travel',
+            'moving_retract',
+        }:
+            prev_extrude = prev_move('moving_extrude', current, stop=line)
+            return line, prev_extrude
+
+        traveled += current.annotation.distance_mm or 0
+        current.comment = (current.comment or '') + ' traveled: ' + str(traveled)
+
+    # current is now the line to cut because it caused the distance to be exceeded
+    current_length = current.annotation.distance_mm
+    b_length = traveled - distance
+    a_length = current_length - b_length
+
+    current.comment = (current.comment or '') + f' length: {current_length} a: {a_length}, b: {b_length}'
+
+    # # prevent undesirably small segments
+    # if a_length < min_segment_length or b_length < min_segment_length:
+    #     if a_length < b_length:
+    #         return line, current
+    #     else:
+    #         prev_extrude = prev_move('moving_extrude', current, stop=line)
+    #         return line, prev_extrude
+
+    a = Line(str(current))
+    a.annotation._state = current.annotation._state
+
+    b = Line(str(current))
+
+    a_factor = a_length / current_length
+    b_factor = b_length / current_length
+
+    a_x, a_y = (current.annotation.vector * a_factor) + current.annotation.start_pos
+    a.params['X'] = f'{a_x:.3f}'
+    a.params['Y'] = f'{a_y:.3f}'
+
+    if current_e := current.params.get('E'):
+        current_e = float(current_e)
+        a.params['E'] = f'{current_e * a_factor:.5f}'
+        b.params['E'] = f'{current_e * b_factor:.5f}'
+
+    if current is line:
+        line = a
+
+    current_section = current.section
+    current_section.insert_after(current, a)
+    current_section.insert_after(a, b)
+    current_section.remove(current)
+
+    annotate(a, b)
+
+    return line, a

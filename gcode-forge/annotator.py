@@ -17,11 +17,12 @@ def annotate(first: Line, last: Line=None):
     filament_diameter = 1.75
 
     if annotator_state := first.annotation._state:
-        previous_pos, current_pos, ba_norm = annotator_state
+        previous_pos, current_pos, ba_norm, desired_feed = annotator_state
     else:
         previous_pos = np.array([float('NaN'), float('NaN')])
         current_pos = np.array([float('NaN'), float('NaN')])
         ba_norm = float('NaN')
+        desired_feed = None
 
     line = first
     while True:
@@ -29,10 +30,16 @@ def annotate(first: Line, last: Line=None):
         line.annotation._state = [
             previous_pos,
             current_pos,
-            ba_norm
+            ba_norm,
+            desired_feed
         ]
 
         if line.code in ('G1', 'G0'):
+            if (feed_str := line.params.get('F')) is not None:
+                desired_feed = float(feed_str)
+
+            line.annotation.desired_feed_mms = desired_feed
+
             new_pos = np.array([
                 float(line.params.get('X', current_pos[0])),
                 float(line.params.get('Y', current_pos[1])),

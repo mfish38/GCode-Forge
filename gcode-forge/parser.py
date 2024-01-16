@@ -13,6 +13,7 @@ class Annotation:
     angle_deg: float = None
     extrude_mm3: float = None
     move_type: str = None
+    desired_feed_mms: float = None
 
 class Line:
     '''
