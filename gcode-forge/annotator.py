@@ -13,7 +13,7 @@ np.seterr('raise')
 
 # Annotate linked list of continuous positive extrusion?
 
-def annotate(first: Line, last: Line=None):
+def annotate(first: Line, last: Line=None, reannotate=False):
     filament_diameter = 1.75
 
     if annotator_state := first.annotation._state:
@@ -35,7 +35,10 @@ def annotate(first: Line, last: Line=None):
         ]
 
         if line.code in ('G1', 'G0'):
-            if (feed_str := line.params.get('F')) is not None:
+            if reannotate:
+                if line.annotation.desired_feed_mms is not None:
+                    desired_feed = line.annotation.desired_feed_mms
+            elif (feed_str := line.params.get('F')) is not None:
                 desired_feed = float(feed_str)
 
             line.annotation.desired_feed_mms = desired_feed

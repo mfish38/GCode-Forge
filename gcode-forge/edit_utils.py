@@ -124,7 +124,7 @@ def split_distance_back(line: Line, distance:float, min_segment_length:float):
     current_section.insert_after(a, b)
     current_section.remove(current)
 
-    annotate(a, line)
+    annotate(a, line, reannotate=True)
 
     return b
 
@@ -197,6 +197,6 @@ def split_distance_forward(line: Line, distance:float, min_segment_length:float)
     if current is line:
         line = a
 
-    annotate(a, b)
+    annotate(a, b, reannotate=True)
 
     return line, a

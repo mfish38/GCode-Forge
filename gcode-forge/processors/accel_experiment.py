@@ -58,6 +58,7 @@ def apply(gcode: GCodeFile, options):
                 while True:
                     if current_line.code in ('G1', 'G0'):
                         if 'F' in current_line.params:
+                            # print(current_line)
                             current_line_feed = float(current_line.params['F'])
                             if current_line_feed <= feed_rate:
                                 stop = True
@@ -103,7 +104,8 @@ def apply(gcode: GCodeFile, options):
 
                 current_start = slow_cut.next
 
-            section.insert_before(current_start, Line(f'G2 F{current_start.annotation.desired_feed_mms} ;restored'))
+            if slow_cut:
+                section.insert_after(slow_cut, Line(f'G1 F{slow_cut.annotation.desired_feed_mms} ;restored'))
 
 
 
