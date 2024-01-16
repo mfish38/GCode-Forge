@@ -80,9 +80,17 @@ def apply(gcode: GCodeFile, options):
             #   need to get target feedrate set by any segments going forward and recalc speed
             #   increase, or use a formula rather than pre calcing
             feed_rates = np.linspace(angle_speed, line.annotation.desired_feed_mms, steps)[:-1]
-            line, slow_cut = split_distance_forward(line, step_distance, min_segment_length)
+            first = True
             current_start = line
             for feed_rate in feed_rates:
+                current_start, slow_cut = split_distance_forward(current_start, step_distance, min_segment_length)
+                if first:
+                    first = False
+                    line = current_start
+
+                if not slow_cut:
+                    break
+
                 current_line = current_start
                 while True:
                     if current_line.code in ('G1', 'G0'):
@@ -93,15 +101,9 @@ def apply(gcode: GCodeFile, options):
 
                     current_line = current_line.next
 
-                current_start, slow_cut = split_distance_forward(slow_cut.next, step_distance, min_segment_length)
+                current_start = slow_cut.next
 
-                # TODO: find out where this happens
-                if slow_cut is None:
-                    # Fix to allow feed rate insertion to happen
-                    slow_cut = current_start
-                    break
-
-            section.insert_after(slow_cut, Line(f'G2 F{slow_cut.annotation.desired_feed_mms}'))
+            section.insert_before(current_start, Line(f'G2 F{current_start.annotation.desired_feed_mms} ;restored'))
 
 
 
