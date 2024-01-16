@@ -166,12 +166,11 @@ def split_distance_forward(line: Line, distance:float, min_segment_length:float)
 
     # prevent undesirably small segments
     if a_length < min_segment_length or b_length < min_segment_length:
-        check if this is correct
-    #     if a_length < b_length:
-    #         return line, current
-    #     else:
-    #         prev_extrude = prev_move('moving_extrude', current, stop=line)
-    #         return line, prev_extrude
+        if a_length < b_length:
+            prev_extrude = prev_move('moving_extrude', current, stop=line)
+            return line, prev_extrude
+        else:
+            return line, current
 
     a = Line(str(current))
     a.annotation._state = current.annotation._state
