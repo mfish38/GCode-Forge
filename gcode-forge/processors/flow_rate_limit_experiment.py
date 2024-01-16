@@ -42,7 +42,8 @@ def apply(gcode: GCodeFile, options):
                 Line('; SHARP ANGLE')
             )
 
-            # TODO: make a function
+            # TODO: these should stop if reach end of continuous forward extrusion sequence
+            # TODO: change accel profile from linear
             feed_rates = np.linspace(angle_speed, line.annotation.desired_feed_mms, steps)[:-1]
             current_start = line
             for feed_rate in feed_rates:
@@ -74,18 +75,33 @@ def apply(gcode: GCodeFile, options):
 
                 current_start = slow_cut
 
-            # feed_rates = np.linspace(angle_speed, float(current_feed_rate), steps)[:-1]
-            # TODO: need to get target feedrate set by any segments going forward
+            # TODO: change accel profile from linear
+            # TODO: Currently assumes that feedrate at start is the desired feedrate at end of accel.
+            #   need to get target feedrate set by any segments going forward and recalc speed
+            #   increase, or use a formula rather than pre calcing
+            feed_rates = np.linspace(angle_speed, line.annotation.desired_feed_mms, steps)[:-1]
+            line, slow_cut = split_distance_forward(line, step_distance, min_segment_length)
             current_start = line
-            line, slow_cut = split_distance_forward(current_start, step_distance, min_segment_length)
-            current_start = line
+            for feed_rate in feed_rates:
+                current_line = current_start
+                while True:
+                    if current_line.code in ('G1', 'G0'):
+                        current_line.params['F'] = f'{feed_rate:.1f}'
 
-            slow_cut.comment = f'slow cut'
+                    if current_line is slow_cut:
+                        break
 
-            # slow_cut.section.insert_after(slow_cut, Line('; SLOW CUT forward'))
-            slow_cut.params['F'] = 10
+                    current_line = current_line.next
 
-            section.insert_after(slow_cut, Line(f'G1 F{slow_cut.annotation.desired_feed_mms}'))
+                current_start, slow_cut = split_distance_forward(slow_cut.next, step_distance, min_segment_length)
+
+                # TODO: find out where this happens
+                if slow_cut is None:
+                    # Fix to allow feed rate insertion to happen
+                    slow_cut = current_start
+                    break
+
+            section.insert_after(slow_cut, Line(f'G2 F{slow_cut.annotation.desired_feed_mms}'))
 
 
 

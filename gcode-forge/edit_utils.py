@@ -140,7 +140,7 @@ def split_distance_forward(line: Line, distance:float, min_segment_length:float)
     # Travel forward
     current = line
     traveled = current.annotation.distance_mm or 0
-    current.comment = (current.comment or '') + ' traveled: ' + str(traveled)
+    # current.comment = (current.comment or '') + ' traveled: ' + str(traveled)
     while traveled < distance:
         current = current.next
 
@@ -155,17 +155,18 @@ def split_distance_forward(line: Line, distance:float, min_segment_length:float)
             return line, prev_extrude
 
         traveled += current.annotation.distance_mm or 0
-        current.comment = (current.comment or '') + ' traveled: ' + str(traveled)
+        # current.comment = (current.comment or '') + ' traveled: ' + str(traveled)
 
     # current is now the line to cut because it caused the distance to be exceeded
     current_length = current.annotation.distance_mm
     b_length = traveled - distance
     a_length = current_length - b_length
 
-    current.comment = (current.comment or '') + f' length: {current_length} a: {a_length}, b: {b_length}'
+    # current.comment = (current.comment or '') + f' length: {current_length} a: {a_length}, b: {b_length}'
 
-    # # prevent undesirably small segments
-    # if a_length < min_segment_length or b_length < min_segment_length:
+    # prevent undesirably small segments
+    if a_length < min_segment_length or b_length < min_segment_length:
+        check if this is correct
     #     if a_length < b_length:
     #         return line, current
     #     else:
@@ -189,13 +190,13 @@ def split_distance_forward(line: Line, distance:float, min_segment_length:float)
         a.params['E'] = f'{current_e * a_factor:.5f}'
         b.params['E'] = f'{current_e * b_factor:.5f}'
 
-    if current is line:
-        line = a
-
     current_section = current.section
     current_section.insert_after(current, a)
     current_section.insert_after(a, b)
     current_section.remove(current)
+
+    if current is line:
+        line = a
 
     annotate(a, b)
 
