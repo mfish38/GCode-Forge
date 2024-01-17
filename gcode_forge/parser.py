@@ -1,15 +1,19 @@
 
 from dataclasses import dataclass
 
-import numpy as np
+type Point2D = tuple[float, float]
+type Vector2D = tuple[float, float]
 
 @dataclass(slots=True)
 class Annotation:
+    '''
+    Stores information added by the annotator.
+    '''
     _state: list = None
-    start_pos: np.array = None
-    end_pos: np.array = None
+    start_pos: Point2D = None
+    end_pos: Point2D = None
     distance_mm: float = None
-    vector: np.array = None
+    vector: Vector2D = None
     angle_deg: float = None
     extrude_mm3: float = None
     move_type: str = None
@@ -85,7 +89,7 @@ class Line:
 
     def copy(self):
         '''
-        Note that annotation is not copied
+        Note that annotation is intentionally not copied.
         '''
         line = Line(None)
         line.section = self.section
@@ -121,6 +125,9 @@ class Section:
     prev: 'Section' = None
 
     def _set_first_line(self, line: Line):
+        '''
+        Handles adding the first line to the section.
+        '''
         self.first_line = line
         self.last_line = line
 
@@ -216,6 +223,9 @@ class Section:
 
 @dataclass
 class GCodeFile:
+    '''
+    Represents a gcode file.
+    '''
     first_section: Section
 
     def __repr__(self):
@@ -232,6 +242,9 @@ class GCodeFile:
         return '\n'.join(parts)
 
 def parse(text) -> GCodeFile:
+    '''
+    Parses the given text into a GCodeFile.
+    '''
     lines = text.splitlines()
 
     first_section = Section('start')

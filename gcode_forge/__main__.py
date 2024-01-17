@@ -8,8 +8,8 @@ from . import annotator
 def main(args):
     start = time()
 
+    # Load and process the gcode file.
     path = Path(args[1])
-
     text = path.read_text()
     gcode = parser.parse(text)
     annotator.annotate(gcode.first_section.first_line)
@@ -17,6 +17,7 @@ def main(args):
     SHELL_PA = 0.62
     INFILL_PA = 0.28
 
+    # Configuration defining what gcode processors will run and with what settings.
     processors = {
         # 'line_type_pa': {
         #     'default_pa': SHELL_PA,
@@ -50,12 +51,15 @@ def main(args):
         }
     }
 
+
+    # Run the processors.
     for processor_name, options in processors.items():
         module = import_module('.processors.' + processor_name, package='gcode_forge')
         module.apply(gcode, options)
 
-    output = str(gcode)
 
+    # Write the output.
+    output = str(gcode)
     # path.write_text(output, newline='\n', encoding='UTF-8')
     Path('out.gcode').write_text(output, newline='\n', encoding='UTF-8')
 

@@ -1,11 +1,7 @@
 
 import math
 
-import numpy as np
-
 from .parser import Line
-
-np.seterr('raise')
 
 # Assumes relative extrusion
 
@@ -15,15 +11,18 @@ np.seterr('raise')
 
 # @profile
 def annotate(first: Line, last: Line=None, reannotate=False):
-    filament_diameter = 1.75
+    '''
+    Processes gcode lines and adds information about them to Line.annotation.
+    '''
+    # filament_diameter = 1.75
 
     if annotator_state := first.annotation._state:
+        # If the first line already has a state then use that.
         previous_pos, current_pos, ba_norm, desired_feed = annotator_state
     else:
-        # previous_pos = np.array([float('NaN'), float('NaN')])
-        # current_pos = np.array([float('NaN'), float('NaN')])
-        previous_pos = [float('NaN'), float('NaN')]
-        current_pos = [float('NaN'), float('NaN')]
+        # Initialize state tracked between lines.
+        previous_pos = (float('NaN'), float('NaN'))
+        current_pos = (float('NaN'), float('NaN'))
         ba_norm = float('NaN')
         desired_feed = None
 
@@ -31,7 +30,8 @@ def annotate(first: Line, last: Line=None, reannotate=False):
     while True:
         annotation = line.annotation
 
-        # Store annotator state at the start of annotating the line so that we can restart at this line and re-annotate it.
+        # Store annotator state at the start of annotating the line so that we can restart at this
+        # line and re-annotate it later.
         annotation._state = [
             previous_pos,
             current_pos,
@@ -40,7 +40,10 @@ def annotate(first: Line, last: Line=None, reannotate=False):
         ]
 
         if line.code in ('G1', 'G0'):
+            # Annotate the desired feed rate
             if reannotate:
+                # If we are re-annotating, then ignore feed rate parameters so that the desired feed
+                # rate reflects the original gcode request rather than any modifications.
                 if annotation.desired_feed_mms is not None:
                     desired_feed = annotation.desired_feed_mms
             elif (feed := line.params.get('F')) is not None:
@@ -48,30 +51,29 @@ def annotate(first: Line, last: Line=None, reannotate=False):
 
             annotation.desired_feed_mms = desired_feed
 
-            new_pos = [
+            # Annotate information about the angle of the move with relation to the previous move.
+            # This will be done using vectors where `a` is the previous move start, `b` is this
+            # move's start, and `c` is this moves end. The angle will be calculated as the angle
+            # between b->a and b->c: a<-b->c.
+
+            new_pos = (
                 line.params.get('X', current_pos[0]),
                 line.params.get('Y', current_pos[1]),
-            ]
+            )
 
-            # a<-b->c
-            # ba = [x - y for x, y in zip(previous_pos, current_pos)]
-            # bc = [x - y for x, y in zip(new_pos, current_pos)]
-
-            # a - b
-            ba = [
+            # b->a vector = a - b
+            ba = (
                 previous_pos[0] - current_pos[0],
                 previous_pos[1] - current_pos[1]
-            ]
+            )
 
-            # c - b
-            bc = [
+            # b->c vector = c - b
+            bc = (
                 new_pos[0] - current_pos[0],
                 new_pos[1] - current_pos[1]
-            ]
+            )
 
-            # Faster than bc_norm = np.linalg.norm(bc)
-            # bc_norm = math.sqrt(bc.dot(bc))
-            # bc_norm = math.sqrt(math.sumprod(bc, bc))
+            # Get the magnitude of the b->c vector.
             bc_norm = math.sqrt(bc[0]**2 + bc[1]**2)
 
             if bc_norm:
@@ -86,23 +88,28 @@ def annotate(first: Line, last: Line=None, reannotate=False):
                     angle_deg = None
                 else:
                     angle_rads = math.acos(
+                        # Limit to between -1 and 1 for acos.
                         min(
                             max(
-                                # np.dot(ba, bc) / ba_bc_norm,
-                                # math.sumprod(ba, bc) / ba_bc_norm,
+                                # (b->a dot b->c) / (||b->a|| * ||b->c||)
                                 (ba[0] * bc[0] + ba[1] * bc[1]) / ba_bc_norm,
                                 -1
                             ),
                             1
                         )
                     )
+
                     angle_deg = angle_rads * 180 / math.pi
+
                 annotation.angle_deg = angle_deg
 
                 previous_pos = current_pos
                 current_pos = new_pos
                 ba_norm = bc_norm
 
+
+            # Use the requested extrusion distance and the distance of the move to classify the type
+            # of move.
 
             extrude_distance = line.params.get('E', 0)
 
@@ -130,9 +137,6 @@ def annotate(first: Line, last: Line=None, reannotate=False):
                     move_type = 'travel'
 
             annotation.move_type = move_type
-
-            # line.comment = move_type
-            # line.comment = f'{angle_deg:.1f} {bc_norm:.1f}'
 
         if last and line is last:
             break
