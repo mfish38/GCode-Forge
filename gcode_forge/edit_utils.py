@@ -110,9 +110,11 @@ def split_distance_back(line: Line, distance:float, min_segment_length:float):
     a_factor = a_length / current_length
     b_factor = b_length / current_length
 
-    a_x, a_y = (current.annotation.vector * a_factor) + current.annotation.start_pos
-    a.params['X'] = a_x
-    a.params['Y'] = a_y
+    # a_x, a_y = (current.annotation.vector * a_factor) + current.annotation.start_pos
+    vector = current.annotation.vector
+    start_pos = current.annotation.start_pos
+    a.params['X'] = vector[0] * a_factor + start_pos[0]
+    a.params['Y'] = vector[1] * a_factor + start_pos[1]
 
     if current_e := current.params.get('E'):
         a.params['E'] = current_e * a_factor
@@ -179,9 +181,13 @@ def split_distance_forward(line: Line, distance:float, min_segment_length:float)
     a_factor = a_length / current_length
     b_factor = b_length / current_length
 
-    a_x, a_y = (current.annotation.vector * a_factor) + current.annotation.start_pos
-    a.params['X'] = a_x
-    a.params['Y'] = a_y
+    # a_x, a_y = (current.annotation.vector * a_factor) + current.annotation.start_pos
+    # a.params['X'] = a_x
+    # a.params['Y'] = a_y
+    vector = current.annotation.vector
+    start_pos = current.annotation.start_pos
+    a.params['X'] = vector[0] * a_factor + start_pos[0]
+    a.params['Y'] = vector[1] * a_factor + start_pos[1]
 
     if current_e := current.params.get('E'):
         a.params['E'] = current_e * a_factor

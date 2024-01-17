@@ -9,18 +9,21 @@ np.seterr('raise')
 
 # Assumes relative extrusion
 
-# TODO: vectorize. Will need to track line number associations and re-associate
+# TODO: vectorize? Will need to track line number associations and re-associate
 
 # Annotate linked list of continuous positive extrusion?
 
+# @profile
 def annotate(first: Line, last: Line=None, reannotate=False):
     filament_diameter = 1.75
 
     if annotator_state := first.annotation._state:
         previous_pos, current_pos, ba_norm, desired_feed = annotator_state
     else:
-        previous_pos = np.array([float('NaN'), float('NaN')])
-        current_pos = np.array([float('NaN'), float('NaN')])
+        # previous_pos = np.array([float('NaN'), float('NaN')])
+        # current_pos = np.array([float('NaN'), float('NaN')])
+        previous_pos = [float('NaN'), float('NaN')]
+        current_pos = [float('NaN'), float('NaN')]
         ba_norm = float('NaN')
         desired_feed = None
 
@@ -45,17 +48,31 @@ def annotate(first: Line, last: Line=None, reannotate=False):
 
             annotation.desired_feed_mms = desired_feed
 
-            new_pos = np.array([
+            new_pos = [
                 line.params.get('X', current_pos[0]),
                 line.params.get('Y', current_pos[1]),
-            ])
+            ]
 
             # a<-b->c
-            ba = previous_pos - current_pos
-            bc = new_pos - current_pos
+            # ba = [x - y for x, y in zip(previous_pos, current_pos)]
+            # bc = [x - y for x, y in zip(new_pos, current_pos)]
+
+            # a - b
+            ba = [
+                previous_pos[0] - current_pos[0],
+                previous_pos[1] - current_pos[1]
+            ]
+
+            # c - b
+            bc = [
+                new_pos[0] - current_pos[0],
+                new_pos[1] - current_pos[1]
+            ]
 
             # Faster than bc_norm = np.linalg.norm(bc)
-            bc_norm = math.sqrt(bc.dot(bc))
+            # bc_norm = math.sqrt(bc.dot(bc))
+            # bc_norm = math.sqrt(math.sumprod(bc, bc))
+            bc_norm = math.sqrt(bc[0]**2 + bc[1]**2)
 
             if bc_norm:
                 annotation.start_pos = current_pos
@@ -71,7 +88,9 @@ def annotate(first: Line, last: Line=None, reannotate=False):
                     angle_rads = math.acos(
                         min(
                             max(
-                                np.dot(ba, bc) / ba_bc_norm,
+                                # np.dot(ba, bc) / ba_bc_norm,
+                                # math.sumprod(ba, bc) / ba_bc_norm,
+                                (ba[0] * bc[0] + ba[1] * bc[1]) / ba_bc_norm,
                                 -1
                             ),
                             1
