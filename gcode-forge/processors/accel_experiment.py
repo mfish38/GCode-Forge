@@ -1,16 +1,28 @@
 
+import math
 import numpy as np
 
 from ..parser import GCodeFile, Line
 from ..edit_utils import split_distance_back, prev_continuous_move, split_distance_forward
 
+# TODO: rewrite to calculate junction speed instead of a single angle speed for sharp angles?
+# although current approach only does accel on sharp angles, which may be the prefered approach for print speed
+# def junction_speed(max_accel_mmss, deviation):
+#     # https://onehossshay.wordpress.com/2011/09/24/improving_grbl_cornering_algorithm/
+#     already have cos_theta from angle calc in annotator
+#     sin_half_theta = math.sqrt((1 - cos_theta) / 2)
+#     r = deviation * (sin_half_theta / (1 - sin_half_theta))
+#     return math.sqrt(max_accel_mmss * r)
+
+# TODO: acceleration from continuous extrusion start and decel to stop
 
 def apply(gcode: GCodeFile, options):
     sharp_angle = options['sharp_angle_deg']
-    step_distance = options['step_distance']
+    step_distance_mm = options['step_distance_mm']
     angle_speed = options['angle_speed_mms'] * 60
-    steps = options['steps'] + 1
-    min_segment_length = 0.012
+    step_size = options['step_size_mms'] * 60
+    # min_segment_length = 0.012
+    min_segment_length = 0.1
 
     section = gcode.first_section
     while section:
@@ -42,23 +54,20 @@ def apply(gcode: GCodeFile, options):
                 Line('; SHARP ANGLE')
             )
 
-            # TODO: these should stop if reach end of continuous forward extrusion sequence
             # TODO: change accel profile from linear
-            feed_rates = np.linspace(angle_speed, line.annotation.desired_feed_mms, steps)[:-1]
             current_start = line
-            for feed_rate in feed_rates:
-                slow_cut = split_distance_back(current_start, step_distance, min_segment_length)
+            feed_rate = angle_speed
+            while True:
+                slow_cut = split_distance_back(current_start, step_distance_mm, min_segment_length)
 
                 if not slow_cut:
                     break
 
-                # slow_cut.section.insert_before(slow_cut, Line('; SLOW CUT'))
                 stop = False
                 current_line = current_start.prev
                 while True:
                     if current_line.code in ('G1', 'G0'):
                         if 'F' in current_line.params:
-                            # print(current_line)
                             current_line_feed = float(current_line.params['F'])
                             if current_line_feed <= feed_rate:
                                 stop = True
@@ -76,15 +85,16 @@ def apply(gcode: GCodeFile, options):
 
                 current_start = slow_cut
 
+                feed_rate += step_size
+                if feed_rate >= line.annotation.desired_feed_mms:
+                    break
+
             # TODO: change accel profile from linear
-            # TODO: Currently assumes that feedrate at start is the desired feedrate at end of accel.
-            #   need to get target feedrate set by any segments going forward and recalc speed
-            #   increase, or use a formula rather than pre calcing
-            feed_rates = np.linspace(angle_speed, line.annotation.desired_feed_mms, steps)[:-1]
             first = True
             current_start = line
-            for feed_rate in feed_rates:
-                current_start, slow_cut = split_distance_forward(current_start, step_distance, min_segment_length)
+            feed_rate = angle_speed
+            while True:
+                current_start, slow_cut = split_distance_forward(current_start, step_distance_mm, min_segment_length)
                 if first:
                     first = False
                     line = current_start
@@ -103,6 +113,10 @@ def apply(gcode: GCodeFile, options):
                     current_line = current_line.next
 
                 current_start = slow_cut.next
+
+                feed_rate += step_size
+                if feed_rate >= line.annotation.desired_feed_mms:
+                    break
 
             if slow_cut:
                 section.insert_after(slow_cut, Line(f'G1 F{slow_cut.annotation.desired_feed_mms} ;restored'))
