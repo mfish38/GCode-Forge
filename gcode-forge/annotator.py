@@ -26,8 +26,10 @@ def annotate(first: Line, last: Line=None, reannotate=False):
 
     line = first
     while True:
+        annotation = line.annotation
+
         # Store annotator state at the start of annotating the line so that we can restart at this line and re-annotate it.
-        line.annotation._state = [
+        annotation._state = [
             previous_pos,
             current_pos,
             ba_norm,
@@ -36,12 +38,12 @@ def annotate(first: Line, last: Line=None, reannotate=False):
 
         if line.code in ('G1', 'G0'):
             if reannotate:
-                if line.annotation.desired_feed_mms is not None:
-                    desired_feed = line.annotation.desired_feed_mms
+                if annotation.desired_feed_mms is not None:
+                    desired_feed = annotation.desired_feed_mms
             elif (feed := line.params.get('F')) is not None:
                 desired_feed = feed
 
-            line.annotation.desired_feed_mms = desired_feed
+            annotation.desired_feed_mms = desired_feed
 
             new_pos = np.array([
                 line.params.get('X', current_pos[0]),
@@ -52,12 +54,14 @@ def annotate(first: Line, last: Line=None, reannotate=False):
             ba = previous_pos - current_pos
             bc = new_pos - current_pos
 
-            bc_norm = np.linalg.norm(bc)
+            # Faster than bc_norm = np.linalg.norm(bc)
+            bc_norm = math.sqrt(bc.dot(bc))
+
             if bc_norm:
-                line.annotation.start_pos = current_pos
-                line.annotation.end_pos = new_pos
-                line.annotation.distance_mm = bc_norm
-                line.annotation.vector = bc
+                annotation.start_pos = current_pos
+                annotation.end_pos = new_pos
+                annotation.distance_mm = bc_norm
+                annotation.vector = bc
 
                 ba_bc_norm = ba_norm * bc_norm
 
@@ -73,7 +77,7 @@ def annotate(first: Line, last: Line=None, reannotate=False):
                         )
                     )
                     angle_deg = angle_rads * 180 / math.pi
-                line.annotation.angle_deg = angle_deg
+                annotation.angle_deg = angle_deg
 
                 previous_pos = current_pos
                 current_pos = new_pos
@@ -82,9 +86,8 @@ def annotate(first: Line, last: Line=None, reannotate=False):
 
             extrude_distance = line.params.get('E', 0)
 
-            extrude_mm3 = extrude_distance * math.pi * (filament_diameter ** 2)
-
-            line.annotation.extrude_mm3 = extrude_mm3
+            # extrude_mm3 = extrude_distance * math.pi * (filament_diameter ** 2)
+            # annotation.extrude_mm3 = extrude_mm3
 
             if bc_norm < 0.0001:
                 if extrude_distance > 0.000001:
@@ -106,7 +109,7 @@ def annotate(first: Line, last: Line=None, reannotate=False):
                 else:
                     move_type = 'travel'
 
-            line.annotation.move_type = move_type
+            annotation.move_type = move_type
 
             # line.comment = move_type
             # line.comment = f'{angle_deg:.1f} {bc_norm:.1f}'
