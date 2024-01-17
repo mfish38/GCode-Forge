@@ -21,7 +21,10 @@ def apply(gcode: GCodeFile, options):
     step_distance_mm = options['step_distance_mm']
     angle_speed = options['angle_speed_mms'] * 60
     step_size = options['step_size_mms'] * 60
-    # min_segment_length = 0.012
+
+    # When cutting the moves to make velocity changes, if the cut falls within this distance of an
+    # existing junction, that junction will be used instead of making a new one, preventing super
+    # tiny line segments below this size.
     min_segment_length = 0.1
 
     section = gcode.first_section
@@ -54,7 +57,10 @@ def apply(gcode: GCodeFile, options):
                 Line('; SHARP ANGLE')
             )
 
-            # TODO: change accel profile from linear
+            # Apply acceleration down to the junction velocity by splitting the proceeding lines
+            # into segments of increasing velocity until the desired feed rate leading into the
+            # junction is hit, or the feed rate is already lower (possibly set by acceleration from
+            # a previous junction).
             current_start = line
             feed_rate = angle_speed
             while True:
@@ -89,7 +95,9 @@ def apply(gcode: GCodeFile, options):
                 if feed_rate >= line.annotation.desired_feed_mms:
                     break
 
-            # TODO: change accel profile from linear
+            # Apply acceleration up from the junction velocity by splitting the following lines
+            # into segments of increasing velocity until the desired feed rate leaving the
+            # junction is hit.
             first = True
             current_start = line
             feed_rate = angle_speed
@@ -118,8 +126,9 @@ def apply(gcode: GCodeFile, options):
                 if feed_rate >= line.annotation.desired_feed_mms:
                     break
 
+            # Now that acceleration has finished, set the feed rate to the desired feed rate.
             if slow_cut:
-                section.insert_after(slow_cut, Line(f'G1 F{slow_cut.annotation.desired_feed_mms} ;restored'))
+                section.insert_after(slow_cut, Line(f'G1 F{slow_cut.annotation.desired_feed_mms}'))
 
             if line is section.last_line:
                 break
