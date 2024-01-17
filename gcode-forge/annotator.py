@@ -69,10 +69,11 @@ def annotate(first: Line, last: Line=None, reannotate=False):
                     angle_deg = None
                 else:
                     angle_rads = math.acos(
-                        np.clip(
-                            np.dot(ba, bc)
-                            / ba_bc_norm,
-                            -1,
+                        min(
+                            max(
+                                np.dot(ba, bc) / ba_bc_norm,
+                                -1
+                            ),
                             1
                         )
                     )
