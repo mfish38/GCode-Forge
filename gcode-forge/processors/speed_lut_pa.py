@@ -14,7 +14,7 @@ def apply(gcode: GCodeFile, options):
         line = section.first_line
         while True:
             if line.code in ('G1', 'G0') and 'F' in line.params:
-                feed_mms = float(line.params['F']) / 60
+                feed_mms = line.params['F'] / 60
 
                 new_pa = pa_lut(
                     min(

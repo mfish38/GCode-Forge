@@ -19,7 +19,22 @@ class Line:
     '''
     Represents a file line.
     '''
+    __slots__ = [
+        'section',
+        'annotation',
+        'prev',
+        'next',
+        'comment',
+        'code',
+        'params',
+        'eqparams',
+    ]
+
     def __init__(self, text):
+        # Skip if copy()
+        if text is None:
+            return
+
         # What section the line belongs to
         self.section = None
 
@@ -63,10 +78,26 @@ class Line:
             if value == '':
                 params[key] = None
             else:
-                params[key] = value
+                params[key] = float(value)
 
         self.params = params
         self.eqparams = eqparams
+
+    def copy(self):
+        '''
+        Note that annotation is not copied
+        '''
+        line = Line(None)
+        line.section = self.section
+        line.annotation = Annotation()
+        line.prev = self.prev
+        line.next = self.next
+        line.comment = self.comment
+        line.code = self.code
+        line.params = self.params.copy()
+        line.eqparams = self.eqparams.copy()
+
+        return line
 
     def __repr__(self):
         return f'<Line {self}>'

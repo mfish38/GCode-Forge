@@ -68,12 +68,12 @@ def apply(gcode: GCodeFile, options):
                 while True:
                     if current_line.code in ('G1', 'G0'):
                         if 'F' in current_line.params:
-                            current_line_feed = float(current_line.params['F'])
+                            current_line_feed = current_line.params['F']
                             if current_line_feed <= feed_rate:
                                 stop = True
                                 break
 
-                        current_line.params['F'] = f'{feed_rate:.1f}'
+                        current_line.params['F'] = feed_rate
 
                     if current_line is slow_cut:
                         break
@@ -105,7 +105,7 @@ def apply(gcode: GCodeFile, options):
                 current_line = current_start
                 while True:
                     if current_line.code in ('G1', 'G0'):
-                        current_line.params['F'] = f'{feed_rate:.1f}'
+                        current_line.params['F'] = feed_rate
 
                     if current_line is slow_cut:
                         break
@@ -120,40 +120,6 @@ def apply(gcode: GCodeFile, options):
 
             if slow_cut:
                 section.insert_after(slow_cut, Line(f'G1 F{slow_cut.annotation.desired_feed_mms} ;restored'))
-
-
-
-
-
-            # current_start = line
-            # for feed_rate in feed_rates:
-            #     slow_cut = split_distance_back(current_start, step_distance, min_segment_length)
-
-            #     if not slow_cut:
-            #         break
-
-            #     # slow_cut.section.insert_before(slow_cut, Line('; SLOW CUT'))
-            #     stop = False
-            #     current_line = current_start.prev
-            #     while True:
-            #         if current_line.code in ('G1', 'G0'):
-            #             if 'F' in current_line.params:
-            #                 current_line_feed = float(current_line.params['F'])
-            #                 if current_line_feed <= feed_rate:
-            #                     stop = True
-            #                     break
-
-            #             current_line.params['F'] = f'{feed_rate:.1f}'
-
-            #         if current_line is slow_cut:
-            #             break
-
-            #         current_line = current_line.prev
-
-            #     if stop:
-            #         break
-
-            #     current_start = slow_cut
 
             if line is section.last_line:
                 break

@@ -38,14 +38,14 @@ def annotate(first: Line, last: Line=None, reannotate=False):
             if reannotate:
                 if line.annotation.desired_feed_mms is not None:
                     desired_feed = line.annotation.desired_feed_mms
-            elif (feed_str := line.params.get('F')) is not None:
-                desired_feed = float(feed_str)
+            elif (feed := line.params.get('F')) is not None:
+                desired_feed = feed
 
             line.annotation.desired_feed_mms = desired_feed
 
             new_pos = np.array([
-                float(line.params.get('X', current_pos[0])),
-                float(line.params.get('Y', current_pos[1])),
+                line.params.get('X', current_pos[0]),
+                line.params.get('Y', current_pos[1]),
             ])
 
             # a<-b->c
@@ -80,7 +80,7 @@ def annotate(first: Line, last: Line=None, reannotate=False):
                 ba_norm = bc_norm
 
 
-            extrude_distance = float(line.params.get('E', 0))
+            extrude_distance = line.params.get('E', 0)
 
             extrude_mm3 = extrude_distance * math.pi * (filament_diameter ** 2)
 

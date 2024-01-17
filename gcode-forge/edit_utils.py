@@ -102,22 +102,21 @@ def split_distance_back(line: Line, distance:float, min_segment_length:float):
                 return current
             return next_extrude
 
-    a = Line(str(current))
+    a = current.copy()
     a.annotation._state = current.annotation._state
 
-    b = Line(str(current))
+    b = current.copy()
 
     a_factor = a_length / current_length
     b_factor = b_length / current_length
 
     a_x, a_y = (current.annotation.vector * a_factor) + current.annotation.start_pos
-    a.params['X'] = f'{a_x:.3f}'
-    a.params['Y'] = f'{a_y:.3f}'
+    a.params['X'] = a_x
+    a.params['Y'] = a_y
 
     if current_e := current.params.get('E'):
-        current_e = float(current_e)
-        a.params['E'] = f'{current_e * a_factor:.5f}'
-        b.params['E'] = f'{current_e * b_factor:.5f}'
+        a.params['E'] = current_e * a_factor
+        b.params['E'] = current_e * b_factor
 
     current_section = current.section
     current_section.insert_after(current, a)
@@ -172,22 +171,21 @@ def split_distance_forward(line: Line, distance:float, min_segment_length:float)
         else:
             return line, current
 
-    a = Line(str(current))
+    a = current.copy()
     a.annotation._state = current.annotation._state
 
-    b = Line(str(current))
+    b = current.copy()
 
     a_factor = a_length / current_length
     b_factor = b_length / current_length
 
     a_x, a_y = (current.annotation.vector * a_factor) + current.annotation.start_pos
-    a.params['X'] = f'{a_x:.3f}'
-    a.params['Y'] = f'{a_y:.3f}'
+    a.params['X'] = a_x
+    a.params['Y'] = a_y
 
     if current_e := current.params.get('E'):
-        current_e = float(current_e)
-        a.params['E'] = f'{current_e * a_factor:.5f}'
-        b.params['E'] = f'{current_e * b_factor:.5f}'
+        a.params['E'] = current_e * a_factor
+        b.params['E'] = current_e * b_factor
 
     current_section = current.section
     current_section.insert_after(current, a)
