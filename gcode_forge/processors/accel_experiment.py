@@ -57,6 +57,7 @@ def apply(gcode: GCodeFile, options):
                 Line('; SHARP ANGLE')
             )
 
+            # TODO: implement actual acceleration rather than linear velocity ramp steps
             # Apply acceleration down to the junction velocity by splitting the proceeding lines
             # into segments of increasing velocity until the desired feed rate leading into the
             # junction is hit, or the feed rate is already lower (possibly set by acceleration from
@@ -95,6 +96,7 @@ def apply(gcode: GCodeFile, options):
                 if feed_rate >= line.annotation.desired_feed_mms:
                     break
 
+            # TODO: implement actual acceleration rather than linear velocity ramp steps
             # Apply acceleration up from the junction velocity by splitting the following lines
             # into segments of increasing velocity until the desired feed rate leaving the
             # junction is hit.
