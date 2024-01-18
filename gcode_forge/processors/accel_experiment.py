@@ -19,8 +19,8 @@ from ..edit_utils import split_distance_back, prev_continuous_move, split_distan
 def apply(gcode: GCodeFile, options):
     sharp_angle = options['sharp_angle_deg']
     step_distance_mm = options['step_distance_mm']
-    angle_speed = options['angle_speed_mms'] * 60
-    step_size = options['step_size_mms'] * 60
+    angle_speed_mms = options['angle_speed_mms']
+    acceleration_mmss = options['acceleration_mmss']
 
     # When cutting the moves to make velocity changes, if the cut falls within this distance of an
     # existing junction, that junction will be used instead of making a new one, preventing super
@@ -63,24 +63,25 @@ def apply(gcode: GCodeFile, options):
             # junction is hit, or the feed rate is already lower (possibly set by acceleration from
             # a previous junction).
             current_start = line
-            feed_rate = angle_speed
+            feed_rate = angle_speed_mms
             while True:
                 slow_cut = split_distance_back(current_start, step_distance_mm, min_segment_length)
 
                 if not slow_cut:
                     break
 
+                # Apply to all segments between the start and the cut.
                 stop = False
                 current_line = current_start.prev
                 while True:
                     if current_line.code in ('G1', 'G0'):
                         if 'F' in current_line.params:
-                            current_line_feed = current_line.params['F']
+                            current_line_feed = current_line.params['F'] / 60
                             if current_line_feed <= feed_rate:
                                 stop = True
                                 break
 
-                        current_line.params['F'] = feed_rate
+                        current_line.params['F'] = feed_rate * 60
 
                     if current_line is slow_cut:
                         break
@@ -92,8 +93,8 @@ def apply(gcode: GCodeFile, options):
 
                 current_start = slow_cut
 
-                feed_rate += step_size
-                if feed_rate >= line.annotation.desired_feed_mms:
+                feed_rate = math.sqrt(feed_rate**2 + 2 * acceleration_mmss * step_distance_mm)
+                if feed_rate >= line.annotation.desired_feed_mms / 60:
                     break
 
             # TODO: implement actual acceleration rather than linear velocity ramp steps
@@ -102,7 +103,7 @@ def apply(gcode: GCodeFile, options):
             # junction is hit.
             first = True
             current_start = line
-            feed_rate = angle_speed
+            feed_rate = angle_speed_mms
             while True:
                 current_start, slow_cut = split_distance_forward(current_start, step_distance_mm, min_segment_length)
                 if first:
@@ -115,7 +116,7 @@ def apply(gcode: GCodeFile, options):
                 current_line = current_start
                 while True:
                     if current_line.code in ('G1', 'G0'):
-                        current_line.params['F'] = feed_rate
+                        current_line.params['F'] = feed_rate * 60
 
                     if current_line is slow_cut:
                         break
@@ -124,8 +125,8 @@ def apply(gcode: GCodeFile, options):
 
                 current_start = slow_cut.next
 
-                feed_rate += step_size
-                if feed_rate >= line.annotation.desired_feed_mms:
+                feed_rate = math.sqrt(feed_rate**2 + 2 * acceleration_mmss * step_distance_mm)
+                if feed_rate >= line.annotation.desired_feed_mms / 60:
                     break
 
             # Now that acceleration has finished, set the feed rate to the desired feed rate.
