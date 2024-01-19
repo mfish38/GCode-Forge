@@ -127,6 +127,8 @@ def apply(gcode: GCodeFile, options):
                 line = line.next
                 continue
 
+            # TODO: need to calculate junction speed and accel for travel moves as well.
+
             if not prev_continuous_move('moving_extrude', line):
                 # line = accelerate_forward(line, 5, step_distance_mm, min_segment_length, acceleration_mmss)
 
