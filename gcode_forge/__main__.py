@@ -46,8 +46,8 @@ def main(args):
         'accel_experiment': {
             'sharp_angle_deg': 140,
             'step_distance_mm': 0.5,
-            'acceleration_mmss': 10000,
-            'angle_speed_mms': 10
+            'acceleration_mmss': 8000,
+            'angle_speed_mms': 5
         }
     }
 

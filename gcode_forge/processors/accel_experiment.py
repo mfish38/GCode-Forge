@@ -1,18 +1,24 @@
 
 import math
-import numpy as np
 
 from ..parser import GCodeFile, Line
 from ..edit_utils import split_distance_back, prev_continuous_move, split_distance_forward
 
-# TODO: rewrite to calculate junction speed instead of a single angle speed for sharp angles?
-# although current approach only does accel on sharp angles, which may be the prefered approach for print speed
-# def junction_speed(max_accel_mmss, deviation):
-#     # https://onehossshay.wordpress.com/2011/09/24/improving_grbl_cornering_algorithm/
-#     already have cos_theta from angle calc in annotator
-#     sin_half_theta = math.sqrt((1 - cos_theta) / 2)
-#     r = deviation * (sin_half_theta / (1 - sin_half_theta))
-#     return math.sqrt(max_accel_mmss * r)
+FEED_MMS_EPSILON = 0.001 * 60
+
+def calc_junction_speed(max_accel_mmss, deviation, cos_theta, desired_feed_mms):
+    # https://onehossshay.wordpress.com/2011/09/24/improving_grbl_cornering_algorithm/
+
+    # If cos_theta is -1 then the angle of the junction is 180 deg and the following math would
+    # divide by zero.
+    if cos_theta <= math.nextafter(-1, 0):
+        return desired_feed_mms
+
+    sin_half_theta = math.sqrt((1 - cos_theta) / 2)
+    r = deviation * (sin_half_theta / (1 - sin_half_theta))
+    v_junction = math.sqrt(max_accel_mmss * r)
+
+    return min(v_junction, desired_feed_mms)
 
 # TODO: acceleration from continuous extrusion start and decel to stop
 
@@ -31,17 +37,17 @@ def apply(gcode: GCodeFile, options):
     while section:
         line = section.first_line
         while True:
-            if line.annotation.angle_deg is None:
+            if line.annotation.cos_theta is None:
                 if line is section.last_line:
                     break
                 line = line.next
                 continue
 
-            if line.annotation.angle_deg > sharp_angle:
-                if line is section.last_line:
-                    break
-                line = line.next
-                continue
+            # if line.annotation.angle_deg > sharp_angle:
+            #     if line is section.last_line:
+            #         break
+            #     line = line.next
+            #     continue
 
             if not (
                 line.annotation.move_type == 'moving_extrude'
@@ -52,17 +58,30 @@ def apply(gcode: GCodeFile, options):
                 line = line.next
                 continue
 
-            section.insert_before(
-                line,
-                Line('; SHARP ANGLE')
-            )
+            desired_feed_mms = line.annotation.desired_feed_mms
+            junction_speed_mms = calc_junction_speed(acceleration_mmss, 0.0001, line.annotation.cos_theta, desired_feed_mms)
+            if desired_feed_mms - junction_speed_mms < FEED_MMS_EPSILON:
+                if line is section.last_line:
+                    break
+                line = line.next
+                continue
+
+            # junction_speed_mms = desired_feed_mms
+            # junction_speed_mms = min(junction_speed_mms, 100)
+            # if junction_speed_mms < 5:
+            #     print("HERE")
+
+            # section.insert_before(
+            #     line,
+            #     Line('; SHARP ANGLE')
+            # )
 
             # Apply acceleration down to the junction velocity by splitting the proceeding lines
             # into segments of increasing velocity until the desired feed rate leading into the
             # junction is hit, or the feed rate is already lower (possibly set by acceleration from
             # a previous junction).
             current_start = line
-            feed_rate = angle_speed_mms
+            feed_rate_mms = junction_speed_mms
             while True:
                 slow_cut = split_distance_back(current_start, step_distance_mm, min_segment_length)
 
@@ -75,12 +94,12 @@ def apply(gcode: GCodeFile, options):
                 while True:
                     if current_line.code in ('G1', 'G0'):
                         if 'F' in current_line.params:
-                            current_line_feed = current_line.params['F'] / 60
-                            if current_line_feed <= feed_rate:
+                            current_line_feed_mms = current_line.params['F'] / 60
+                            if current_line_feed_mms <= feed_rate_mms:
                                 stop = True
                                 break
 
-                        current_line.params['F'] = feed_rate * 60
+                        current_line.params['F'] = feed_rate_mms * 60
 
                     if current_line is slow_cut:
                         break
@@ -92,8 +111,8 @@ def apply(gcode: GCodeFile, options):
 
                 current_start = slow_cut
 
-                feed_rate = math.sqrt(feed_rate**2 + 2 * acceleration_mmss * step_distance_mm)
-                if feed_rate >= line.annotation.desired_feed_mms / 60:
+                feed_rate_mms = math.sqrt(feed_rate_mms**2 + 2 * acceleration_mmss * step_distance_mm)
+                if feed_rate_mms >= current_start.annotation.desired_feed_mms:
                     break
 
             # Apply acceleration up from the junction velocity by splitting the following lines
@@ -101,7 +120,7 @@ def apply(gcode: GCodeFile, options):
             # junction is hit.
             first = True
             current_start = line
-            feed_rate = angle_speed_mms
+            feed_rate_mms = junction_speed_mms
             while True:
                 current_start, slow_cut = split_distance_forward(current_start, step_distance_mm, min_segment_length)
                 if first:
@@ -114,7 +133,7 @@ def apply(gcode: GCodeFile, options):
                 current_line = current_start
                 while True:
                     if current_line.code in ('G1', 'G0'):
-                        current_line.params['F'] = feed_rate * 60
+                        current_line.params['F'] = feed_rate_mms * 60
 
                     if current_line is slow_cut:
                         break
@@ -123,13 +142,13 @@ def apply(gcode: GCodeFile, options):
 
                 current_start = slow_cut.next
 
-                feed_rate = math.sqrt(feed_rate**2 + 2 * acceleration_mmss * step_distance_mm)
-                if feed_rate >= line.annotation.desired_feed_mms / 60:
+                feed_rate_mms = math.sqrt(feed_rate_mms**2 + 2 * acceleration_mmss * step_distance_mm)
+                if feed_rate_mms >= line.annotation.desired_feed_mms:
                     break
 
             # Now that acceleration has finished, set the feed rate to the desired feed rate.
             if slow_cut:
-                section.insert_after(slow_cut, Line(f'G1 F{slow_cut.annotation.desired_feed_mms}'))
+                section.insert_after(slow_cut, Line(f'G1 F{slow_cut.annotation.desired_feed_mms * 60} ; restore'))
 
             if line is section.last_line:
                 break

@@ -18,6 +18,7 @@ class Annotation:
     extrude_mm3: float = None
     move_type: str = None
     desired_feed_mms: float = None
+    cos_theta: float = None
 
 class Line:
     '''

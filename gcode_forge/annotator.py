@@ -47,7 +47,7 @@ def annotate(first: Line, last: Line=None, reannotate=False):
                 if annotation.desired_feed_mms is not None:
                     desired_feed = annotation.desired_feed_mms
             elif (feed := line.params.get('F')) is not None:
-                desired_feed = feed
+                desired_feed = feed / 60
 
             annotation.desired_feed_mms = desired_feed
 
@@ -87,18 +87,18 @@ def annotate(first: Line, last: Line=None, reannotate=False):
                 if ba_bc_norm == 0:
                     angle_deg = None
                 else:
-                    angle_rads = math.acos(
-                        # Limit to between -1 and 1 for acos.
-                        min(
-                            max(
-                                # (b->a dot b->c) / (||b->a|| * ||b->c||)
-                                (ba[0] * bc[0] + ba[1] * bc[1]) / ba_bc_norm,
-                                -1
-                            ),
-                            1
-                        )
+                    # cos(theta) = (b->a dot b->c) / (||b->a|| * ||b->c||)
+                    cos_theta = min(
+                        max(
+                            (ba[0] * bc[0] + ba[1] * bc[1]) / ba_bc_norm,
+                            -1
+                        ),
+                        1
                     )
+                    annotation.cos_theta = cos_theta
 
+                    # TODO: only annotate cos_theta and have function to get angle?
+                    angle_rads = math.acos(cos_theta)
                     angle_deg = angle_rads * 180 / math.pi
 
                 annotation.angle_deg = angle_deg
