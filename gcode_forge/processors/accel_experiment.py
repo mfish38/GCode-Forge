@@ -23,9 +23,7 @@ def calc_junction_speed(max_accel_mmss, deviation, cos_theta, desired_feed_mms):
 # TODO: acceleration from continuous extrusion start and decel to stop
 
 def apply(gcode: GCodeFile, options):
-    sharp_angle = options['sharp_angle_deg']
     step_distance_mm = options['step_distance_mm']
-    angle_speed_mms = options['angle_speed_mms']
     acceleration_mmss = options['acceleration_mmss']
 
     # When cutting the moves to make velocity changes, if the cut falls within this distance of an
@@ -43,12 +41,6 @@ def apply(gcode: GCodeFile, options):
                 line = line.next
                 continue
 
-            # if line.annotation.angle_deg > sharp_angle:
-            #     if line is section.last_line:
-            #         break
-            #     line = line.next
-            #     continue
-
             if not (
                 line.annotation.move_type == 'moving_extrude'
                 and prev_continuous_move('moving_extrude', line)
@@ -65,16 +57,6 @@ def apply(gcode: GCodeFile, options):
                     break
                 line = line.next
                 continue
-
-            # junction_speed_mms = desired_feed_mms
-            # junction_speed_mms = min(junction_speed_mms, 100)
-            # if junction_speed_mms < 5:
-            #     print("HERE")
-
-            # section.insert_before(
-            #     line,
-            #     Line('; SHARP ANGLE')
-            # )
 
             # Apply acceleration down to the junction velocity by splitting the proceeding lines
             # into segments of increasing velocity until the desired feed rate leading into the
@@ -143,7 +125,7 @@ def apply(gcode: GCodeFile, options):
                 current_start = slow_cut.next
 
                 feed_rate_mms = math.sqrt(feed_rate_mms**2 + 2 * acceleration_mmss * step_distance_mm)
-                if feed_rate_mms >= line.annotation.desired_feed_mms:
+                if feed_rate_mms >= current_start.annotation.desired_feed_mms:
                     break
 
             # Now that acceleration has finished, set the feed rate to the desired feed rate.
