@@ -102,6 +102,8 @@ def accelerate_forward(line: Line, from_mms: float, step_distance_mm: float, min
     if slow_cut:
         slow_cut.section.insert_after(slow_cut, Line(f'G1 F{slow_cut.annotation.desired_feed_mms * 60} ; restore'))
 
+    return line
+
 
 def apply(gcode: GCodeFile, options):
     step_distance_mm = options['step_distance_mm']
@@ -119,16 +121,23 @@ def apply(gcode: GCodeFile, options):
     while section:
         line = section.first_line
         while True:
-            if line.annotation.cos_theta is None:
+            if line.annotation.move_type != 'moving_extrude':
                 if line is section.last_line:
                     break
                 line = line.next
                 continue
 
-            if not (
-                line.annotation.move_type == 'moving_extrude'
-                and prev_continuous_move('moving_extrude', line)
-            ):
+            if not prev_continuous_move('moving_extrude', line):
+                # line = accelerate_forward(line, 5, step_distance_mm, min_segment_length, acceleration_mmss)
+
+                if line is section.last_line:
+                    break
+                line = line.next
+                continue
+
+            if not next_continuous_move('moving_extrude', line):
+                # accelerate_backward(line.next, 5, step_distance_mm, min_segment_length, acceleration_mmss)
+
                 if line is section.last_line:
                     break
                 line = line.next
