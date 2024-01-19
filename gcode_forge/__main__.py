@@ -44,10 +44,9 @@ def main(args):
 
         # Experimental, incomplete hand has bugs
         'accel_experiment': {
-            'sharp_angle_deg': 140,
             'step_distance_mm': 0.5,
-            'acceleration_mmss': 8000,
-            'angle_speed_mms': 5
+            'acceleration_mmss': 8000.0,
+            'square_corner_velocity_mms': 5.0
         }
     }
 

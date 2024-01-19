@@ -25,6 +25,9 @@ def calc_junction_speed(max_accel_mmss, deviation, cos_theta, desired_feed_mms):
 def apply(gcode: GCodeFile, options):
     step_distance_mm = options['step_distance_mm']
     acceleration_mmss = options['acceleration_mmss']
+    square_corner_velocity_mms = options['square_corner_velocity_mms']
+
+    junction_deviation = (square_corner_velocity_mms**2) * (math.sqrt(2) - 1) / acceleration_mmss
 
     # When cutting the moves to make velocity changes, if the cut falls within this distance of an
     # existing junction, that junction will be used instead of making a new one, preventing super
@@ -51,7 +54,7 @@ def apply(gcode: GCodeFile, options):
                 continue
 
             desired_feed_mms = line.annotation.desired_feed_mms
-            junction_speed_mms = calc_junction_speed(acceleration_mmss, 0.0001, line.annotation.cos_theta, desired_feed_mms)
+            junction_speed_mms = calc_junction_speed(acceleration_mmss, junction_deviation, line.annotation.cos_theta, desired_feed_mms)
             if desired_feed_mms - junction_speed_mms < FEED_MMS_EPSILON:
                 if line is section.last_line:
                     break
