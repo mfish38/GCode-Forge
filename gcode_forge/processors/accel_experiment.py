@@ -2,7 +2,7 @@
 import math
 
 from ..parser import GCodeFile, Line
-from ..edit_utils import split_distance_back, prev_continuous_move, split_distance_forward
+from ..edit_utils import split_distance_back, prev_continuous_move, split_distance_forward, next_continuous_move
 
 FEED_MMS_EPSILON = 0.001 * 60
 
@@ -122,7 +122,9 @@ def apply(gcode: GCodeFile, options):
 
                     current_line = current_line.next
 
-                current_start = slow_cut.next
+                current_start = next_continuous_move('moving_extrude', slow_cut)
+                if current_start is None:
+                    break
 
                 feed_rate_mms = math.sqrt(feed_rate_mms**2 + 2 * acceleration_mmss * step_distance_mm)
                 if feed_rate_mms >= current_start.annotation.desired_feed_mms:

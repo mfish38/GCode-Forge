@@ -60,6 +60,30 @@ def prev_continuous_move(move_type, line):
 
     return None
 
+def next_continuous_move(move_type, line):
+    '''
+    Gets the first next move of the given move type in a sequence of continuous forward
+    extrusion that the given line belongs to.
+    '''
+    while True:
+        line = line.next
+        if line is None:
+            break
+
+        if line.annotation.move_type in {
+            'extrude',
+            'retract',
+            'z',
+            'travel',
+            'moving_retract',
+        }:
+            break
+
+        if line.annotation.move_type == move_type:
+            return line
+
+    return None
+
 def split_distance_back(line: Line, distance:float, min_segment_length:float):
     '''
     Splits a previous line segment at a given distance back from the start of the given line.
