@@ -22,6 +22,79 @@ def calc_junction_speed(max_accel_mmss, deviation, cos_theta, desired_feed_mms):
 
 # TODO: acceleration from continuous extrusion start and decel to stop
 
+# TODO: move to edit utils, also doc that eventually diferent accel profiles can be passed, or just make passed in
+def accelerate_backward(line: Line, from_mms: float, step_distance_mm: float, min_segment_length_mm: float, acceleration_mmss: float):
+    current_start = line
+    feed_rate_mms = from_mms
+    while True:
+        slow_cut = split_distance_back(current_start, step_distance_mm, min_segment_length_mm)
+
+        if not slow_cut:
+            break
+
+        # Apply to all segments between the start and the cut.
+        stop = False
+        current_line = current_start.prev
+        while True:
+            if current_line.code in ('G1', 'G0'):
+                if 'F' in current_line.params:
+                    current_line_feed_mms = current_line.params['F'] / 60
+                    if current_line_feed_mms <= feed_rate_mms:
+                        stop = True
+                        break
+
+                current_line.params['F'] = feed_rate_mms * 60
+
+            if current_line is slow_cut:
+                break
+
+            current_line = current_line.prev
+
+        if stop:
+            break
+
+        current_start = slow_cut
+
+        feed_rate_mms = math.sqrt(feed_rate_mms**2 + 2 * acceleration_mmss * step_distance_mm)
+        if feed_rate_mms >= current_start.annotation.desired_feed_mms:
+            break
+
+def accelerate_forward(line: Line, from_mms: float, step_distance_mm: float, min_segment_length_mm: float, acceleration_mmss: float):
+    first = True
+    current_start = line
+    feed_rate_mms = from_mms
+    while True:
+        current_start, slow_cut = split_distance_forward(current_start, step_distance_mm, min_segment_length_mm)
+        if first:
+            first = False
+            line = current_start
+
+        if not slow_cut:
+            break
+
+        current_line = current_start
+        while True:
+            if current_line.code in ('G1', 'G0'):
+                current_line.params['F'] = feed_rate_mms * 60
+
+            if current_line is slow_cut:
+                break
+
+            current_line = current_line.next
+
+        current_start = next_continuous_move('moving_extrude', slow_cut)
+        if current_start is None:
+            break
+
+        feed_rate_mms = math.sqrt(feed_rate_mms**2 + 2 * acceleration_mmss * step_distance_mm)
+        if feed_rate_mms >= current_start.annotation.desired_feed_mms:
+            break
+
+    # Now that acceleration has finished, set the feed rate to the desired feed rate.
+    if slow_cut:
+        slow_cut.section.insert_after(slow_cut, Line(f'G1 F{slow_cut.annotation.desired_feed_mms * 60} ; restore'))
+
+
 def apply(gcode: GCodeFile, options):
     step_distance_mm = options['step_distance_mm']
     acceleration_mmss = options['acceleration_mmss']
@@ -61,81 +134,84 @@ def apply(gcode: GCodeFile, options):
                 line = line.next
                 continue
 
+            accelerate_backward(line, junction_speed_mms, step_distance_mm, min_segment_length, acceleration_mmss)
+            accelerate_forward(line, junction_speed_mms, step_distance_mm, min_segment_length, acceleration_mmss)
+
             # Apply acceleration down to the junction velocity by splitting the proceeding lines
             # into segments of increasing velocity until the desired feed rate leading into the
             # junction is hit, or the feed rate is already lower (possibly set by acceleration from
             # a previous junction).
-            current_start = line
-            feed_rate_mms = junction_speed_mms
-            while True:
-                slow_cut = split_distance_back(current_start, step_distance_mm, min_segment_length)
+            # current_start = line
+            # feed_rate_mms = junction_speed_mms
+            # while True:
+            #     slow_cut = split_distance_back(current_start, step_distance_mm, min_segment_length)
 
-                if not slow_cut:
-                    break
+            #     if not slow_cut:
+            #         break
 
-                # Apply to all segments between the start and the cut.
-                stop = False
-                current_line = current_start.prev
-                while True:
-                    if current_line.code in ('G1', 'G0'):
-                        if 'F' in current_line.params:
-                            current_line_feed_mms = current_line.params['F'] / 60
-                            if current_line_feed_mms <= feed_rate_mms:
-                                stop = True
-                                break
+            #     # Apply to all segments between the start and the cut.
+            #     stop = False
+            #     current_line = current_start.prev
+            #     while True:
+            #         if current_line.code in ('G1', 'G0'):
+            #             if 'F' in current_line.params:
+            #                 current_line_feed_mms = current_line.params['F'] / 60
+            #                 if current_line_feed_mms <= feed_rate_mms:
+            #                     stop = True
+            #                     break
 
-                        current_line.params['F'] = feed_rate_mms * 60
+            #             current_line.params['F'] = feed_rate_mms * 60
 
-                    if current_line is slow_cut:
-                        break
+            #         if current_line is slow_cut:
+            #             break
 
-                    current_line = current_line.prev
+            #         current_line = current_line.prev
 
-                if stop:
-                    break
+            #     if stop:
+            #         break
 
-                current_start = slow_cut
+            #     current_start = slow_cut
 
-                feed_rate_mms = math.sqrt(feed_rate_mms**2 + 2 * acceleration_mmss * step_distance_mm)
-                if feed_rate_mms >= current_start.annotation.desired_feed_mms:
-                    break
+            #     feed_rate_mms = math.sqrt(feed_rate_mms**2 + 2 * acceleration_mmss * step_distance_mm)
+            #     if feed_rate_mms >= current_start.annotation.desired_feed_mms:
+            #         break
 
             # Apply acceleration up from the junction velocity by splitting the following lines
             # into segments of increasing velocity until the desired feed rate leaving the
             # junction is hit.
-            first = True
-            current_start = line
-            feed_rate_mms = junction_speed_mms
-            while True:
-                current_start, slow_cut = split_distance_forward(current_start, step_distance_mm, min_segment_length)
-                if first:
-                    first = False
-                    line = current_start
+            # first = True
+            # current_start = line
+            # feed_rate_mms = junction_speed_mms
+            # while True:
+            #     current_start, slow_cut = split_distance_forward(current_start, step_distance_mm, min_segment_length)
+            #     if first:
+            #         first = False
+            #         line = current_start
 
-                if not slow_cut:
-                    break
+            #     if not slow_cut:
+            #         break
 
-                current_line = current_start
-                while True:
-                    if current_line.code in ('G1', 'G0'):
-                        current_line.params['F'] = feed_rate_mms * 60
+            #     current_line = current_start
+            #     while True:
+            #         if current_line.code in ('G1', 'G0'):
+            #             current_line.params['F'] = feed_rate_mms * 60
 
-                    if current_line is slow_cut:
-                        break
+            #         if current_line is slow_cut:
+            #             break
 
-                    current_line = current_line.next
+            #         current_line = current_line.next
 
-                current_start = next_continuous_move('moving_extrude', slow_cut)
-                if current_start is None:
-                    break
+            #     current_start = next_continuous_move('moving_extrude', slow_cut)
+            #     if current_start is None:
+            #         break
 
-                feed_rate_mms = math.sqrt(feed_rate_mms**2 + 2 * acceleration_mmss * step_distance_mm)
-                if feed_rate_mms >= current_start.annotation.desired_feed_mms:
-                    break
+            #     feed_rate_mms = math.sqrt(feed_rate_mms**2 + 2 * acceleration_mmss * step_distance_mm)
+            #     if feed_rate_mms >= current_start.annotation.desired_feed_mms:
+            #         break
 
-            # Now that acceleration has finished, set the feed rate to the desired feed rate.
-            if slow_cut:
-                section.insert_after(slow_cut, Line(f'G1 F{slow_cut.annotation.desired_feed_mms * 60} ; restore'))
+            # # Now that acceleration has finished, set the feed rate to the desired feed rate.
+            # if slow_cut:
+            #     section.insert_after(slow_cut, Line(f'G1 F{slow_cut.annotation.desired_feed_mms * 60} ; restore'))
 
             if line is section.last_line:
                 break
