@@ -20,6 +20,18 @@ class Annotation:
     desired_feed_mms: float = None
     cos_theta: float = None
 
+MOVE_PARAM_PRECISION = {
+    'X': 3,
+    'Y': 3,
+    'F': 3,
+    'E': 5,
+}
+
+PARAM_PRECISION = {
+    'G0': MOVE_PARAM_PRECISION,
+    'G1': MOVE_PARAM_PRECISION
+}
+
 class Line:
     '''
     Represents a file line.
@@ -108,9 +120,19 @@ class Line:
         return f'<Line {self}>'
 
     def __str__(self):
+        param_precision = PARAM_PRECISION.get(self.code, {})
+
+        params = []
+        for k, v in self.params.items():
+            if k in param_precision and v is not None:
+                params.append(f'{k}{v:.{param_precision[k]}f}')
+            else:
+                v = '' if v is None else v
+                params.append(f'{k}{v}')
+
         parts = [
             self.code,
-            *(f'{k}{'' if v is None else v}' for k, v in self.params.items()),
+            *params,
             *(f'{k}={'' if v is None else v}' for k, v in self.eqparams.items()),
             f';{self.comment}' if self.comment else '',
         ]
