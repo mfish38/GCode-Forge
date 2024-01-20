@@ -117,30 +117,20 @@ def apply(gcode: GCodeFile, options):
     # tiny line segments below this size.
     min_segment_length = 0.1
 
-    section = gcode.first_section
-    while section:
-        line = section.first_line
-        while True:
-            if line.annotation.move_type is None or line.annotation.desired_feed_mms is None or line.annotation.cos_theta is None or math.isnan(line.annotation.cos_theta):
-                if line is section.last_line:
-                    break
-                line = line.next
-                continue
-
-            desired_feed_mms = line.annotation.desired_feed_mms
-            junction_speed_mms = calc_junction_speed(acceleration_mmss, junction_deviation, line.annotation.cos_theta, desired_feed_mms)
-            if desired_feed_mms - junction_speed_mms < FEED_MMS_EPSILON:
-                if line is section.last_line:
-                    break
-                line = line.next
-                continue
-
-            accelerate_backward(line, junction_speed_mms, step_distance_mm, min_segment_length, acceleration_mmss)
-            accelerate_forward(line, junction_speed_mms, step_distance_mm, min_segment_length, acceleration_mmss)
-
-            if line is section.last_line:
-                break
+    line = gcode.first_section.first_line
+    while line.next:
+        if line.annotation.move_type is None or line.annotation.desired_feed_mms is None or line.annotation.cos_theta is None or math.isnan(line.annotation.cos_theta):
             line = line.next
+            continue
 
-        section = section.next
+        desired_feed_mms = line.annotation.desired_feed_mms
+        junction_speed_mms = calc_junction_speed(acceleration_mmss, junction_deviation, line.annotation.cos_theta, desired_feed_mms)
+        if desired_feed_mms - junction_speed_mms < FEED_MMS_EPSILON:
+            line = line.next
+            continue
+
+        accelerate_backward(line, junction_speed_mms, step_distance_mm, min_segment_length, acceleration_mmss)
+        accelerate_forward(line, junction_speed_mms, step_distance_mm, min_segment_length, acceleration_mmss)
+
+        line = line.next
 
