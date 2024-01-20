@@ -2,16 +2,16 @@
 from .parser import Line
 from .annotator import annotate
 
-def next_move(move_type, line, stop=None):
+def next_move(line, stop=None):
     '''
-    Gets the first next move of a given type after the given line.
+    Gets the first next move after the given line.
     '''
     while True:
         line = line.next
         if line is None:
             break
 
-        if line.annotation.move_type == move_type:
+        if line.annotation.move_type is not None:
             return line
 
         if line is stop:
@@ -19,16 +19,16 @@ def next_move(move_type, line, stop=None):
 
     return None
 
-def prev_move(move_type, line, stop=None):
+def prev_move(line, stop=None):
     '''
-    Gets the first previous move of a given type after the given line.
+    Gets the first previous move after the given line.
     '''
     while True:
         line = line.prev
         if line is None:
             break
 
-        if line.annotation.move_type == move_type:
+        if line.annotation.move_type is not None:
             return line
 
         if line is stop:
@@ -103,20 +103,6 @@ def split_distance_back(line: Line, distance:float, min_segment_length:float):
     while traveled < distance:
         current = current.prev
 
-        # Handle the case where we have a break in the extrusion line before hitting the specified
-        # distance.
-        if current.annotation.move_type in {
-            'extrude',
-            'retract',
-            'z',
-            'travel',
-            'moving_retract',
-        }:
-            next_extrude = next_move('moving_extrude', current, stop=line)
-            if next_extrude is line:
-                return None
-            return next_extrude
-
         traveled += current.annotation.distance_mm or 0
 
     # `current` is now the line to cut because it caused the distance to be exceeded. Determine the
@@ -131,7 +117,7 @@ def split_distance_back(line: Line, distance:float, min_segment_length:float):
         if a_length < b_length:
             return current
         else:
-            next_extrude = next_move('moving_extrude', current, stop=line)
+            next_extrude = next_move(current, stop=line)
             if next_extrude is line:
                 return current
             return next_extrude
@@ -184,18 +170,6 @@ def split_distance_forward(line: Line, distance:float, min_segment_length:float)
     while traveled < distance:
         current = current.next
 
-        # Handle the case where we have a break in the extrusion line before hitting the specified
-        # distance.
-        if current.annotation.move_type in {
-            'extrude',
-            'retract',
-            'z',
-            'travel',
-            'moving_retract',
-        }:
-            prev_extrude = prev_move('moving_extrude', current, stop=line)
-            return line, prev_extrude
-
         traveled += current.annotation.distance_mm or 0
 
     # `current` is now the line to cut because it caused the distance to be exceeded. Determine the
@@ -208,7 +182,7 @@ def split_distance_forward(line: Line, distance:float, min_segment_length:float)
     # Prevent undesirably small segments
     if a_length < min_segment_length or b_length < min_segment_length:
         if a_length < b_length:
-            prev_extrude = prev_move('moving_extrude', current, stop=line)
+            prev_extrude = prev_move(current, stop=line)
             return line, prev_extrude
         else:
             return line, current
