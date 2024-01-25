@@ -103,6 +103,9 @@ def split_distance_back(line: Line, distance:float, min_segment_length:float):
     while traveled < distance:
         current = current.prev
 
+        if current is None:
+            return current
+
         traveled += current.annotation.distance_mm or 0
 
     # `current` is now the line to cut because it caused the distance to be exceeded. Determine the
@@ -169,6 +172,9 @@ def split_distance_forward(line: Line, distance:float, min_segment_length:float)
     traveled = current.annotation.distance_mm or 0
     while traveled < distance:
         current = current.next
+
+        if current is None:
+            return line, current
 
         traveled += current.annotation.distance_mm or 0
 
