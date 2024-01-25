@@ -39,7 +39,7 @@ def accelerate_backward(line: Line, from_mms: float, step_distance_mm: float, mi
         stop = False
         current_line = current_start.prev
         while True:
-            if current_line.code in ('G1', 'G0'):
+            if current_line.is_move:
                 if 'F' in current_line.params:
                     current_line_feed_mms = current_line.params['F'] / 60
                     if current_line_feed_mms <= feed_rate_mms:
@@ -82,7 +82,7 @@ def accelerate_forward(line: Line, from_mms: float, step_distance_mm: float, min
 
         current_line = current_start
         while True:
-            if current_line.code in ('G1', 'G0'):
+            if current_line.is_move:
                 current_line.params['F'] = feed_rate_mms * 60
 
             if current_line is slow_cut:

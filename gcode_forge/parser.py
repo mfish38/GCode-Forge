@@ -45,6 +45,7 @@ class Line:
         'code',
         'params',
         'eqparams',
+        'is_move',
     ]
 
     def __init__(self, text):
@@ -76,10 +77,13 @@ class Line:
             self.code = None
             self.params = {}
             self.eqparams = {}
+            self.is_move = False
             return
 
         parts = text.split()
         self.code = parts[0].upper()
+
+        self.is_move = self.code in ('G1', 'G0')
 
         # Parse the parameters
         params = {}
@@ -111,6 +115,7 @@ class Line:
         line.next = self.next
         line.comment = self.comment
         line.code = self.code
+        line.is_move = self.is_move
         line.params = self.params.copy()
         line.eqparams = self.eqparams.copy()
 

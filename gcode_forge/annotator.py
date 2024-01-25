@@ -1,5 +1,5 @@
 
-import math
+from math import sqrt
 
 from .parser import Line
 
@@ -32,14 +32,14 @@ def annotate(first: Line, last: Line=None, reannotate=False):
 
         # Store annotator state at the start of annotating the line so that we can restart at this
         # line and re-annotate it later.
-        annotation._state = [
+        annotation._state = (
             previous_pos,
             current_pos,
             ba_norm,
             desired_feed
-        ]
+        )
 
-        if line.code in ('G1', 'G0'):
+        if line.is_move:
             # Annotate the desired feed rate
             if reannotate:
                 # If we are re-annotating, then ignore feed rate parameters so that the desired feed
@@ -74,7 +74,7 @@ def annotate(first: Line, last: Line=None, reannotate=False):
             )
 
             # Get the magnitude of the b->c vector.
-            bc_norm = math.sqrt(bc[0]**2 + bc[1]**2)
+            bc_norm = sqrt(bc[0]**2 + bc[1]**2)
 
             if bc_norm:
                 annotation.start_pos = current_pos
@@ -84,9 +84,7 @@ def annotate(first: Line, last: Line=None, reannotate=False):
 
                 ba_bc_norm = ba_norm * bc_norm
 
-                if ba_bc_norm == 0:
-                    angle_deg = None
-                else:
+                if ba_bc_norm != 0:
                     # cos(theta) = (b->a dot b->c) / (||b->a|| * ||b->c||)
                     cos_theta = min(
                         max(
@@ -97,11 +95,9 @@ def annotate(first: Line, last: Line=None, reannotate=False):
                     )
                     annotation.cos_theta = cos_theta
 
-                    # TODO: only annotate cos_theta and have function to get angle?
-                    angle_rads = math.acos(cos_theta)
-                    angle_deg = angle_rads * 180 / math.pi
-
-                annotation.angle_deg = angle_deg
+                    # TODO: have function in edit_utils to get angle as follows:
+                    # angle_rads = math.acos(cos_theta)
+                    # angle_deg = angle_rads * 180 / math.pi
 
                 previous_pos = current_pos
                 current_pos = new_pos

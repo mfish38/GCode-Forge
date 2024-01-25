@@ -13,7 +13,7 @@ def apply(gcode: GCodeFile, options):
     while section:
         line = section.first_line
         while True:
-            if line.code in ('G1', 'G0') and 'F' in line.params:
+            if line.is_move and 'F' in line.params:
                 feed_mms = line.params['F'] / 60
 
                 new_pa = pa_lut(
