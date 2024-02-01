@@ -14,26 +14,26 @@ def main(args):
     gcode = parser.parse(text)
     annotator.annotate(gcode.first_section.first_line)
 
-    SHELL_PA = 0.62
-    INFILL_PA = 0.28
+    SHELL_PA = 0.37
+    INFILL_PA = 0.0
 
     # Configuration defining what gcode processors will run and with what settings.
     processors = {
-        # 'line_type_pa': {
-        #     'default_pa': SHELL_PA,
-        #     'pa_values': {
-        #         'internal solid infill': INFILL_PA,
-        #         'top surface': SHELL_PA,
-        #         'gap infill': INFILL_PA,
-        #         'sparse infill': INFILL_PA,
-        #         'internal bridge': INFILL_PA,
-        #         'outer wall': SHELL_PA,
-        #         'overhang wall': SHELL_PA,
-        #         'bridge': SHELL_PA,
-        #         'inner wall': SHELL_PA,
-        #         'bottom surface': SHELL_PA
-        #     }
-        # },
+        'line_type_pa': {
+            'default_pa': SHELL_PA,
+            'pa_values': {
+                'internal solid infill': INFILL_PA,
+                'top surface': SHELL_PA,
+                'gap infill': INFILL_PA,
+                'sparse infill': INFILL_PA,
+                'internal bridge': INFILL_PA,
+                'outer wall': SHELL_PA,
+                'overhang wall': SHELL_PA,
+                'bridge': SHELL_PA,
+                'inner wall': SHELL_PA,
+                'bottom surface': SHELL_PA
+            }
+        },
 
         # Note: speed based LUT is experimental. Also does not account for line width and acceleration.
         # TODO: rewrite speed_lut_pa to use new linked list file representation
@@ -43,11 +43,11 @@ def main(args):
         # }
 
         # Experimental, incomplete hand has bugs
-        'accel_experiment': {
-            'step_distance_mm': 0.25,
-            'acceleration_mmss': 8000.0,
-            'square_corner_velocity_mms': 5.0
-        }
+        # 'accel_experiment': {
+        #     'step_distance_mm': 0.25,
+        #     'acceleration_mmss': 8000.0,
+        #     'square_corner_velocity_mms': 5.0
+        # }
     }
 
 
@@ -59,8 +59,8 @@ def main(args):
 
     # Write the output.
     output = str(gcode)
-    # path.write_text(output, newline='\n', encoding='UTF-8')
-    Path('out.gcode').write_text(output, newline='\n', encoding='UTF-8')
+    path.write_text(output, newline='\n', encoding='UTF-8')
+    # Path('out.gcode').write_text(output, newline='\n', encoding='UTF-8')
 
     print(time() - start)
 
