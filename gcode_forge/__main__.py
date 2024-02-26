@@ -14,25 +14,48 @@ def main(args):
     gcode = parser.parse(text)
     annotator.annotate(gcode.first_section.first_line)
 
-    SHELL_PA = 0.37
-    INFILL_PA = 0.0
+    SHELL_PA_SMOOTH = 0.01
+    INFILL_PA_SMOOTH = 0.06
 
     # Configuration defining what gcode processors will run and with what settings.
     processors = {
-        'line_type_pa': {
-            'default_pa': SHELL_PA,
-            'pa_values': {
-                'internal solid infill': INFILL_PA,
-                'top surface': SHELL_PA,
-                'gap infill': INFILL_PA,
-                'sparse infill': INFILL_PA,
-                'internal bridge': INFILL_PA,
-                'outer wall': SHELL_PA,
-                'overhang wall': SHELL_PA,
-                'bridge': SHELL_PA,
-                'inner wall': SHELL_PA,
-                'bottom surface': SHELL_PA
-            }
+        'line_type_gcode': {
+            'skirt': f'''
+                SET_PRESSURE_ADVANCE SMOOTH_TIME={INFILL_PA_SMOOTH}
+            ''',
+            'layer_change': f'''
+                SET_PRESSURE_ADVANCE SMOOTH_TIME={INFILL_PA_SMOOTH}
+            ''',
+            'internal solid infill': f'''
+                SET_PRESSURE_ADVANCE SMOOTH_TIME={INFILL_PA_SMOOTH}
+            ''',
+            'top surface': f'''
+                SET_PRESSURE_ADVANCE SMOOTH_TIME={SHELL_PA_SMOOTH}
+            ''',
+            'gap infill': f'''
+                SET_PRESSURE_ADVANCE SMOOTH_TIME={INFILL_PA_SMOOTH}
+            ''',
+            'sparse infill': '''
+                SET_PRESSURE_ADVANCE SMOOTH_TIME={INFILL_PA_SMOOTH}
+            ''',
+            'internal bridge': f'''
+                SET_PRESSURE_ADVANCE SMOOTH_TIME={INFILL_PA_SMOOTH}
+            ''',
+            'outer wall': f'''
+                SET_PRESSURE_ADVANCE SMOOTH_TIME={SHELL_PA_SMOOTH}
+            ''',
+            'overhang wall': f'''
+                SET_PRESSURE_ADVANCE SMOOTH_TIME={SHELL_PA_SMOOTH}
+            ''',
+            'bridge': f'''
+                SET_PRESSURE_ADVANCE SMOOTH_TIME={SHELL_PA_SMOOTH}
+            ''',
+            'inner wall': f'''
+                SET_PRESSURE_ADVANCE SMOOTH_TIME={SHELL_PA_SMOOTH}
+            ''',
+            'bottom surface': f'''
+                SET_PRESSURE_ADVANCE SMOOTH_TIME={SHELL_PA_SMOOTH}
+            ''',
         },
 
         # Note: speed based LUT is experimental. Also does not account for line width and acceleration.

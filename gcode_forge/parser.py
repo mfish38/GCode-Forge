@@ -278,6 +278,7 @@ def parse(text) -> GCodeFile:
     first_section = Section('start')
     current_section = first_section
     for line in lines:
+        line = line.strip()
         if line.startswith(';TYPE:'):
             section_type = line[len(';TYPE:'):].lower()
 
