@@ -35,7 +35,7 @@ def main(args):
             'gap infill': f'''
                 SET_PRESSURE_ADVANCE SMOOTH_TIME={INFILL_PA_SMOOTH}
             ''',
-            'sparse infill': '''
+            'sparse infill': f'''
                 SET_PRESSURE_ADVANCE SMOOTH_TIME={INFILL_PA_SMOOTH}
             ''',
             'internal bridge': f'''
