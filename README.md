@@ -12,7 +12,7 @@ Add the following to "Post-processing Scripts" on the "Other" settings tab.
 
 Example:
 
-    "C:\Users\blend\AppData\Local\Programs\Python\Python310\python.exe" -m gcode_forge
+    "C:\Users\blend\AppData\Local\Programs\Python\Python312\python.exe" -m gcode_forge
 
 # Configuration
 
