@@ -14,47 +14,50 @@ def main(args):
     gcode = parser.parse(text)
     annotator.annotate(gcode.first_section.first_line)
 
+    SHELL_PA = 0.34
+    INFILL_PA = 0.3
+
     SHELL_PA_SMOOTH = 0.01
-    INFILL_PA_SMOOTH = 0.06
+    INFILL_PA_SMOOTH = 0.04
 
     # Configuration defining what gcode processors will run and with what settings.
     processors = {
         'line_type_gcode': {
             'skirt': f'''
-                SET_PRESSURE_ADVANCE SMOOTH_TIME={INFILL_PA_SMOOTH}
+                SET_PRESSURE_ADVANCE ADVANCE={INFILL_PA} SMOOTH_TIME={INFILL_PA_SMOOTH}
             ''',
             'layer_change': f'''
-                SET_PRESSURE_ADVANCE SMOOTH_TIME={INFILL_PA_SMOOTH}
+                SET_PRESSURE_ADVANCE ADVANCE={INFILL_PA} SMOOTH_TIME={INFILL_PA_SMOOTH}
             ''',
             'internal solid infill': f'''
-                SET_PRESSURE_ADVANCE SMOOTH_TIME={INFILL_PA_SMOOTH}
+                SET_PRESSURE_ADVANCE ADVANCE={INFILL_PA} SMOOTH_TIME={INFILL_PA_SMOOTH}
             ''',
             'top surface': f'''
-                SET_PRESSURE_ADVANCE SMOOTH_TIME={SHELL_PA_SMOOTH}
+                SET_PRESSURE_ADVANCE ADVANCE={SHELL_PA} SMOOTH_TIME={SHELL_PA_SMOOTH}
             ''',
             'gap infill': f'''
-                SET_PRESSURE_ADVANCE SMOOTH_TIME={INFILL_PA_SMOOTH}
+                SET_PRESSURE_ADVANCE ADVANCE={INFILL_PA} SMOOTH_TIME={INFILL_PA_SMOOTH}
             ''',
             'sparse infill': f'''
-                SET_PRESSURE_ADVANCE SMOOTH_TIME={INFILL_PA_SMOOTH}
+                SET_PRESSURE_ADVANCE ADVANCE={INFILL_PA} SMOOTH_TIME={INFILL_PA_SMOOTH}
             ''',
             'internal bridge': f'''
-                SET_PRESSURE_ADVANCE SMOOTH_TIME={INFILL_PA_SMOOTH}
+                SET_PRESSURE_ADVANCE ADVANCE={INFILL_PA} SMOOTH_TIME={INFILL_PA_SMOOTH}
             ''',
             'outer wall': f'''
-                SET_PRESSURE_ADVANCE SMOOTH_TIME={SHELL_PA_SMOOTH}
+                SET_PRESSURE_ADVANCE ADVANCE={SHELL_PA} SMOOTH_TIME={SHELL_PA_SMOOTH}
             ''',
             'overhang wall': f'''
-                SET_PRESSURE_ADVANCE SMOOTH_TIME={SHELL_PA_SMOOTH}
+                SET_PRESSURE_ADVANCE ADVANCE={SHELL_PA} SMOOTH_TIME={SHELL_PA_SMOOTH}
             ''',
             'bridge': f'''
-                SET_PRESSURE_ADVANCE SMOOTH_TIME={SHELL_PA_SMOOTH}
+                SET_PRESSURE_ADVANCE ADVANCE={SHELL_PA} SMOOTH_TIME={SHELL_PA_SMOOTH}
             ''',
             'inner wall': f'''
-                SET_PRESSURE_ADVANCE SMOOTH_TIME={SHELL_PA_SMOOTH}
+                SET_PRESSURE_ADVANCE ADVANCE={SHELL_PA} SMOOTH_TIME={SHELL_PA_SMOOTH}
             ''',
             'bottom surface': f'''
-                SET_PRESSURE_ADVANCE SMOOTH_TIME={SHELL_PA_SMOOTH}
+                SET_PRESSURE_ADVANCE ADVANCE={SHELL_PA} SMOOTH_TIME={SHELL_PA_SMOOTH}
             ''',
         },
 
