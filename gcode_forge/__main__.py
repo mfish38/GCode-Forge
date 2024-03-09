@@ -2,65 +2,51 @@ from time import time
 from pathlib import Path
 from importlib import import_module
 
+import yaml
+import jinja2
+
 from . import parser
 from . import annotator
+
+def expand_config_section(macros, config_section):
+    jinja_env = jinja2.Environment(
+        loader=jinja2.DictLoader({
+            'macros': macros,
+            'config': '{% import \'macros\' as macros %}' + config_section
+        })
+    )
+
+    return jinja_env.get_template('config').render()
+
+def structure_map(structure, function):
+    if isinstance(structure, dict):
+        return {k: structure_map(v, function) for k, v in structure.items()}
+    elif isinstance(structure, list):
+        return [structure_map(x, function) for x in structure]
+    elif isinstance(structure, tuple):
+        return tuple(structure_map(x, function) for x in structure)
+
+    return function(structure)
 
 def main(args):
     start = time()
 
+    # Load the config
+    config_path = Path(args[1])
+    config = yaml.safe_load(config_path.read_text())
+    macros = config['macros']
+
+    processors = config['processors']
+    processors = structure_map(processors, lambda x: expand_config_section(macros, x) if isinstance(x, str) else x)
+
     # Load and process the gcode file.
-    path = Path(args[1])
+    path = Path(args[2])
     text = path.read_text()
     gcode = parser.parse(text)
     annotator.annotate(gcode.first_section.first_line)
 
-    SHELL_PA = 0.34
-    INFILL_PA = 0.3
-
-    SHELL_PA_SMOOTH = 0.01
-    INFILL_PA_SMOOTH = 0.04
-
     # Configuration defining what gcode processors will run and with what settings.
-    processors = {
-        'line_type_gcode': {
-            'skirt': f'''
-                SET_PRESSURE_ADVANCE ADVANCE={INFILL_PA} SMOOTH_TIME={INFILL_PA_SMOOTH}
-            ''',
-            'layer_change': f'''
-                SET_PRESSURE_ADVANCE ADVANCE={INFILL_PA} SMOOTH_TIME={INFILL_PA_SMOOTH}
-            ''',
-            'internal solid infill': f'''
-                SET_PRESSURE_ADVANCE ADVANCE={INFILL_PA} SMOOTH_TIME={INFILL_PA_SMOOTH}
-            ''',
-            'top surface': f'''
-                SET_PRESSURE_ADVANCE ADVANCE={SHELL_PA} SMOOTH_TIME={SHELL_PA_SMOOTH}
-            ''',
-            'gap infill': f'''
-                SET_PRESSURE_ADVANCE ADVANCE={INFILL_PA} SMOOTH_TIME={INFILL_PA_SMOOTH}
-            ''',
-            'sparse infill': f'''
-                SET_PRESSURE_ADVANCE ADVANCE={INFILL_PA} SMOOTH_TIME={INFILL_PA_SMOOTH}
-            ''',
-            'internal bridge': f'''
-                SET_PRESSURE_ADVANCE ADVANCE={INFILL_PA} SMOOTH_TIME={INFILL_PA_SMOOTH}
-            ''',
-            'outer wall': f'''
-                SET_PRESSURE_ADVANCE ADVANCE={SHELL_PA} SMOOTH_TIME={SHELL_PA_SMOOTH}
-            ''',
-            'overhang wall': f'''
-                SET_PRESSURE_ADVANCE ADVANCE={SHELL_PA} SMOOTH_TIME={SHELL_PA_SMOOTH}
-            ''',
-            'bridge': f'''
-                SET_PRESSURE_ADVANCE ADVANCE={SHELL_PA} SMOOTH_TIME={SHELL_PA_SMOOTH}
-            ''',
-            'inner wall': f'''
-                SET_PRESSURE_ADVANCE ADVANCE={SHELL_PA} SMOOTH_TIME={SHELL_PA_SMOOTH}
-            ''',
-            'bottom surface': f'''
-                SET_PRESSURE_ADVANCE ADVANCE={SHELL_PA} SMOOTH_TIME={SHELL_PA_SMOOTH}
-            ''',
-        },
-
+    # processors={
         # Note: speed based LUT is experimental. Also does not account for line width and acceleration.
         # TODO: rewrite speed_lut_pa to use new linked list file representation
         # 'speed_lut_pa': {
@@ -74,8 +60,7 @@ def main(args):
         #     'acceleration_mmss': 8000.0,
         #     'square_corner_velocity_mms': 5.0
         # }
-    }
-
+    # }
 
     # Run the processors.
     for processor_name, options in processors.items():

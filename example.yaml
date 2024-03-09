@@ -1,0 +1,33 @@
+
+macros: |
+  {% set SHELL_PA = 0.32 %}
+  {% set INFILL_PA = 0.28 %}
+
+  {% set SHELL_PA_SMOOTH = 0.01 %}
+  {% set INFILL_PA_SMOOTH = 0.04 %}
+processors:
+  line_type_gcode:
+    skirt: |
+      SET_PRESSURE_ADVANCE ADVANCE={{ macros.INFILL_PA }} SMOOTH_TIME={{ macros.INFILL_PA_SMOOTH }}
+    layer_change: |
+      SET_PRESSURE_ADVANCE ADVANCE={{ macros.INFILL_PA }} SMOOTH_TIME={{ macros.INFILL_PA_SMOOTH }}
+    internal solid infill: |
+      SET_PRESSURE_ADVANCE ADVANCE={{ macros.INFILL_PA }} SMOOTH_TIME={{ macros.INFILL_PA_SMOOTH }}
+    top surface: |
+      SET_PRESSURE_ADVANCE ADVANCE={{ macros.SHELL_PA}} SMOOTH_TIME={{ macros.SHELL_PA_SMOOTH }}
+    gap infill: |
+      SET_PRESSURE_ADVANCE ADVANCE={{ macros.INFILL_PA }} SMOOTH_TIME={{ macros.INFILL_PA_SMOOTH }}
+    sparse infill: |
+      SET_PRESSURE_ADVANCE ADVANCE={{ macros.INFILL_PA }} SMOOTH_TIME={{ macros.INFILL_PA_SMOOTH }}
+    internal bridge: |
+      SET_PRESSURE_ADVANCE ADVANCE={{ macros.INFILL_PA }} SMOOTH_TIME={{ macros.INFILL_PA_SMOOTH }}
+    outer wall: |
+      SET_PRESSURE_ADVANCE ADVANCE={{ macros.SHELL_PA}} SMOOTH_TIME={{ macros.SHELL_PA_SMOOTH }}
+    overhang wall: |
+      SET_PRESSURE_ADVANCE ADVANCE={{ macros.SHELL_PA}} SMOOTH_TIME={{ macros.SHELL_PA_SMOOTH }}
+    bridge: |
+      SET_PRESSURE_ADVANCE ADVANCE={{ macros.SHELL_PA}} SMOOTH_TIME={{ macros.SHELL_PA_SMOOTH }}
+    inner wall: |
+      SET_PRESSURE_ADVANCE ADVANCE={{ macros.SHELL_PA}} SMOOTH_TIME={{ macros.SHELL_PA_SMOOTH }}
+    bottom surface: |
+      SET_PRESSURE_ADVANCE ADVANCE={{ macros.SHELL_PA}} SMOOTH_TIME={{ macros.SHELL_PA_SMOOTH }}

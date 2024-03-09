@@ -8,13 +8,14 @@ Install Python. Clone the repository. Install using `pip install -e <path to rep
 Windows:
 Add the following to "Post-processing Scripts" on the "Other" settings tab.
 
-    "<Absolute path to python>" -m gcode_forge
+    "<Absolute path to python>" -m gcode_forge "<Absolute path to .yaml config>"
 
 Example:
 
-    "C:\Users\blend\AppData\Local\Programs\Python\Python312\python.exe" -m gcode_forge
+    "C:\Users\blend\AppData\Local\Programs\Python\Python312\python.exe" -m gcode_forge "D:\home\GCode-Forge\example.yaml"
 
 # Configuration
 
-Configuration will eventually be done using config files. Currently all configuration is done by modifying the data structures in `gcode_forge/__main__.py`
+You can create different yaml files for different print profiles and reference them using the path argument when setting the slicer config.
 
+See `example.yaml` for an example config file.

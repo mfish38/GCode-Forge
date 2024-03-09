@@ -5,4 +5,8 @@ setup(
     version="0.0.1",
     license='MIT',
     packages=find_packages(),
+    install_requires=[
+        'Jinja2',
+        'PyYAML'
+    ]
 )
