@@ -1,5 +1,8 @@
 
 macros: |
+  {% set SHELL_TEMP = 250 %}
+  {% set INFILL_TEMP = 260 %}
+
   {% set SHELL_PA = 0.26 %}
   {% set INFILL_PA = 0.26 %}
 
@@ -9,25 +12,37 @@ processors:
   line_type_gcode:
     skirt: |
       SET_PRESSURE_ADVANCE ADVANCE={{ macros.INFILL_PA }} SMOOTH_TIME={{ macros.INFILL_PA_SMOOTH }}
+      M104 S{{ macros.INFILL_TEMP }}
     layer_change: |
       SET_PRESSURE_ADVANCE ADVANCE={{ macros.INFILL_PA }} SMOOTH_TIME={{ macros.INFILL_PA_SMOOTH }}
+      M104 S{{ macros.INFILL_TEMP }}
     internal solid infill: |
       SET_PRESSURE_ADVANCE ADVANCE={{ macros.INFILL_PA }} SMOOTH_TIME={{ macros.INFILL_PA_SMOOTH }}
+      M104 S{{ macros.INFILL_TEMP }}
     top surface: |
       SET_PRESSURE_ADVANCE ADVANCE={{ macros.SHELL_PA}} SMOOTH_TIME={{ macros.SHELL_PA_SMOOTH }}
+      M104 S{{ macros.SHELL_TEMP }}
     gap infill: |
       SET_PRESSURE_ADVANCE ADVANCE={{ macros.INFILL_PA }} SMOOTH_TIME={{ macros.INFILL_PA_SMOOTH }}
+      M104 S{{ macros.INFILL_TEMP }}
     sparse infill: |
       SET_PRESSURE_ADVANCE ADVANCE={{ macros.INFILL_PA }} SMOOTH_TIME={{ macros.INFILL_PA_SMOOTH }}
+      M104 S{{ macros.INFILL_TEMP }}
     internal bridge: |
       SET_PRESSURE_ADVANCE ADVANCE={{ macros.INFILL_PA }} SMOOTH_TIME={{ macros.INFILL_PA_SMOOTH }}
+      M104 S{{ macros.INFILL_TEMP }}
     outer wall: |
       SET_PRESSURE_ADVANCE ADVANCE={{ macros.SHELL_PA}} SMOOTH_TIME={{ macros.SHELL_PA_SMOOTH }}
+      M104 S{{ macros.SHELL_TEMP }}
     overhang wall: |
       SET_PRESSURE_ADVANCE ADVANCE={{ macros.SHELL_PA}} SMOOTH_TIME={{ macros.SHELL_PA_SMOOTH }}
+      M104 S{{ macros.SHELL_TEMP }}
     bridge: |
       SET_PRESSURE_ADVANCE ADVANCE={{ macros.SHELL_PA}} SMOOTH_TIME={{ macros.SHELL_PA_SMOOTH }}
+      M104 S{{ macros.SHELL_TEMP }}
     inner wall: |
       SET_PRESSURE_ADVANCE ADVANCE={{ macros.SHELL_PA}} SMOOTH_TIME={{ macros.SHELL_PA_SMOOTH }}
+      M104 S{{ macros.SHELL_TEMP }}
     bottom surface: |
       SET_PRESSURE_ADVANCE ADVANCE={{ macros.SHELL_PA}} SMOOTH_TIME={{ macros.SHELL_PA_SMOOTH }}
+      M104 S{{ macros.SHELL_TEMP }}
