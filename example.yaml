@@ -1,7 +1,7 @@
 
 macros: |
-  {% set SHELL_TEMP = 248 %}
-  {% set INFILL_TEMP = 250 %}
+  {% set SHELL_TEMP = 254 %}
+  {% set INFILL_TEMP = 254 %}
 
   {% set SHELL_PA = 0.26 %}
   {% set INFILL_PA = 0.26 %}
@@ -33,7 +33,7 @@ processors:
     sparse infill: |
       {{ macros.INFILL_GCODE }}
     internal bridge: |
-      {{ macros.SHELL_GCODE }}
+      {{ macros.INFILL_GCODE }}
     outer wall: |
       {{ macros.SHELL_GCODE }}
     overhang wall: |
