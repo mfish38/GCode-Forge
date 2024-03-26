@@ -4,8 +4,8 @@ macros: |
   {% set INNER_WALL_TEMP = 250 %}
   {% set INFILL_TEMP = 250 %}
 
-  {% set SHELL_PA = 0.26 %}
-  {% set INNER_WALL_PA = 0.26 %}
+  {% set SHELL_PA = 0.38 %}
+  {% set INNER_WALL_PA = 0.34 %}
   {% set INFILL_PA = 0.26 %}
 
   {% set SHELL_PA_SMOOTH = 0.01 %}
