@@ -6,9 +6,10 @@ from ..edit_utils import split_distance_back, prev_continuous_move, split_distan
 
 # This is another experiment based on accel_experiment with some cleanup
 
-def accelerate_backward(line: Line, from_mms: float, step_distance_mm: float, min_segment_length_mm: float, acceleration_mmss: float):
+def accelerate_backward(line: Line, from_mms: float, step_distance_mm: float, min_segment_length_mm: float, accel_exponent: float, accel_scale_x: float, accel_scale_y: float):
     current_start = line
     feed_rate_mms = from_mms
+    traveled = 0
     while True:
         slow_cut = split_distance_back(current_start, step_distance_mm, min_segment_length_mm)
 
@@ -30,14 +31,17 @@ def accelerate_backward(line: Line, from_mms: float, step_distance_mm: float, mi
 
         current_start = slow_cut
 
-        feed_rate_mms = math.sqrt(feed_rate_mms**2 + 2 * acceleration_mmss * step_distance_mm)
+        traveled += step_distance_mm
+
+        feed_rate_mms = from_mms + ((traveled * accel_scale_x) ** accel_exponent * accel_scale_y)
         if feed_rate_mms >= current_start.annotation.desired_feed_mms:
             break
 
-def accelerate_forward(line: Line, from_mms: float, step_distance_mm: float, min_segment_length_mm: float, acceleration_mmss: float):
+def accelerate_forward(line: Line, from_mms: float, step_distance_mm: float, min_segment_length_mm: float, accel_exponent: float, accel_scale_x: float, accel_scale_y: float):
     first = True
     current_start = line
     feed_rate_mms = from_mms
+    traveled = 0
     while True:
         current_start, slow_cut = split_distance_forward(current_start, step_distance_mm, min_segment_length_mm)
         if first:
@@ -56,7 +60,9 @@ def accelerate_forward(line: Line, from_mms: float, step_distance_mm: float, min
         if current_start is None:
             break
 
-        feed_rate_mms = math.sqrt(feed_rate_mms**2 + 2 * acceleration_mmss * step_distance_mm)
+        traveled += step_distance_mm
+
+        feed_rate_mms = from_mms + ((traveled * accel_scale_x) ** accel_exponent * accel_scale_y)
         if feed_rate_mms >= current_start.annotation.desired_feed_mms:
             break
 
@@ -67,12 +73,15 @@ def accelerate_forward(line: Line, from_mms: float, step_distance_mm: float, min
     return line
 
 def apply(gcode: GCodeFile, options):
-    slow_distance_mm = 2.0
-    slow_speed_mms = 20
-    accel_step_distance_mm = 0.1
-    threshold_angle = 140
-    min_segment_length_mm = 0.05
-    accel_mms = 6000
+    slow_distance_mm = options['slow_distance_mm']
+    slow_speed_mms = options['slow_speed_mms']
+    accel_step_distance_mm = options['accel_step_distance_mm']
+    threshold_angle = options['threshold_angle']
+    min_segment_length_mm = options['min_segment_length_mm']
+
+    accel_exponent = options['accel_exponent']
+    accel_scale_y = options['accel_scale_y']
+    accel_scale_x = options['accel_scale_x']
 
     section = gcode.first_section
     while section:
@@ -110,7 +119,7 @@ def apply(gcode: GCodeFile, options):
                 stop = apply_backward(line, slow_cut, set_speed_back)
 
                 if not stop:
-                    accelerate_backward(slow_cut, slow_speed_mms, accel_step_distance_mm, min_segment_length_mm, accel_mms)
+                    accelerate_backward(slow_cut, slow_speed_mms, accel_step_distance_mm, min_segment_length_mm, accel_exponent, accel_scale_x, accel_scale_y)
 
             line, slow_cut = split_distance_forward(line, slow_distance_mm, min_segment_length_mm)
             if slow_cut:
@@ -120,7 +129,7 @@ def apply(gcode: GCodeFile, options):
                 apply_forward(line, slow_cut, set_speed_forward)
                 slow_cut.section.insert_after(slow_cut, Line(f'G1 F{slow_cut.annotation.desired_feed_mms * 60} ; restore'))
 
-                slow_cut = accelerate_forward(slow_cut.next, slow_speed_mms, accel_step_distance_mm, min_segment_length_mm, accel_mms)
+                slow_cut = accelerate_forward(slow_cut.next, slow_speed_mms, accel_step_distance_mm, min_segment_length_mm, accel_exponent, accel_scale_x, accel_scale_y)
 
             if line is section.last_line:
                 break

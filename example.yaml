@@ -54,3 +54,13 @@ processors:
       {{ macros.SHELL_GCODE }}
     support: |
       {{ macros.INFILL_GCODE }}
+  pa_optimize:
+    slow_distance_mm: 1.0
+    slow_speed_mms: 40
+    accel_step_distance_mm: 0.5
+    threshold_angle: 140
+    min_segment_length_mm: 0.05
+
+    accel_exponent: 1.8
+    accel_scale_y: 1.0
+    accel_scale_x: 1.5
