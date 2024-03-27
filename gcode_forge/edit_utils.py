@@ -84,6 +84,40 @@ def next_continuous_move(move_type, line):
 
     return None
 
+def apply_backward(start, stop, func, *args):
+    should_stop = False
+    current_line = start.prev
+    while True:
+        should_stop = func(current_line, *args)
+        if should_stop:
+            break
+
+        if current_line is stop:
+            break
+
+        current_line = current_line.prev
+        if not current_line:
+            raise Exception('Reached beginning of file')
+
+    return should_stop
+
+def apply_forward(start, stop, func, *args):
+    should_stop = False
+    current_line = start
+    while True:
+        should_stop = func(current_line, *args)
+        if should_stop:
+            break
+
+        if current_line is stop:
+            break
+
+        current_line = current_line.next
+        if not current_line:
+            raise Exception('Reached end of file')
+
+    return should_stop
+
 def split_distance_back(line: Line, distance:float, min_segment_length:float):
     '''
     Splits a previous line segment at a given distance back from the start of the given line.

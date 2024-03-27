@@ -130,7 +130,7 @@ def apply(gcode: GCodeFile, options):
             continue
 
         accelerate_backward(line, junction_speed_mms, step_distance_mm, min_segment_length, acceleration_mmss)
-        accelerate_forward(line, junction_speed_mms, step_distance_mm, min_segment_length, acceleration_mmss)
+        line = accelerate_forward(line, junction_speed_mms, step_distance_mm, min_segment_length, acceleration_mmss)
 
         line = line.next
 

@@ -2,7 +2,7 @@
 import math
 
 from ..parser import GCodeFile, Line
-from ..edit_utils import split_distance_back, prev_continuous_move, split_distance_forward, next_continuous_move, apply_forward, apply_backward
+from ..edit_utils import split_distance_back, split_distance_forward, next_continuous_move, apply_forward, apply_backward
 
 # This is another experiment based on accel_experiment with some cleanup
 
