@@ -73,7 +73,7 @@ def accelerate_forward(line: Line, from_mms: float, step_distance_mm: float, min
     return line
 
 def apply(gcode: GCodeFile, options):
-    slow_distance_mm = options['slow_distance_mm']
+    additional_slow_distance_mm = options['additional_slow_distance_mm']
     slow_speed_mms = options['slow_speed_mms']
     accel_step_distance_mm = options['accel_step_distance_mm']
     threshold_angle = options['threshold_angle']
@@ -106,7 +106,7 @@ def apply(gcode: GCodeFile, options):
                 line = line.next
                 continue
 
-            slow_cut = split_distance_back(line, slow_distance_mm, min_segment_length_mm)
+            slow_cut = split_distance_back(line, additional_slow_distance_mm, min_segment_length_mm)
             if slow_cut:
                 def set_speed_back(line):
                     if line.is_move:
@@ -121,7 +121,7 @@ def apply(gcode: GCodeFile, options):
                 if not stop:
                     accelerate_backward(slow_cut, slow_speed_mms, accel_step_distance_mm, min_segment_length_mm, accel_exponent, accel_scale_x, accel_scale_y)
 
-            line, slow_cut = split_distance_forward(line, slow_distance_mm, min_segment_length_mm)
+            line, slow_cut = split_distance_forward(line, additional_slow_distance_mm, min_segment_length_mm)
             if slow_cut:
                 def set_speed_forward(line):
                     if line.is_move:

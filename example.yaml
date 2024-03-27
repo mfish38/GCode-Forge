@@ -55,7 +55,7 @@ processors:
     support: |
       {{ macros.INFILL_GCODE }}
   pa_optimize:
-    slow_distance_mm: 0.2
+    additional_slow_distance_mm: 0.2
     slow_speed_mms: 40
     accel_step_distance_mm: 0.2
     threshold_angle: 140
