@@ -29,7 +29,7 @@ macros: |
 processors:
   line_type_gcode:
     skirt: |
-      {{ macros.SHELL_GCODE }}
+      {{ macros.INFILL_GCODE }}
     layer_change: |
       {{ macros.INFILL_GCODE }}
     internal solid infill: |
