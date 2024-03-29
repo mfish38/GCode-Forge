@@ -78,8 +78,10 @@ fig, ax = plt.subplots()
 #     simply find on the doubled profile where we meete critera, start at top and if not enough add in constant accel region which is just box as calculated below
 # stop as soon as hit target
 
+from functools import lru_cache
+
 class AccelProfile:
-    def __init__(self, ramp_mmss: npt.NDArray[np.float64], dx_mm: float, accel_dy_mm: float, const_accel_mmss: float):
+    def __init__(self, ramp_mmss: npt.NDArray[np.float64], dt_s: float, accel_dy_mmss: float, const_accel_mmss: float):
         '''
         ramp_mmss
             Acceleration profile for ramping up acceleration from 0 to the constant acceleration value.
@@ -87,10 +89,10 @@ class AccelProfile:
             At the end of the profile, const_accel_mmss will be used as long as needed, and then acceleration
             will be ramped down using a reversed version of the profile.
 
-        dx_mm
-            Distance between acceleration profile elements and the output acceleration and velocity elements.
+        dt_s
+            Time between acceleration profile elements and the output acceleration and velocity elements.
 
-        accel_dy_mm
+        accel_dy_mmss
             This is used to tune max acceleration reached to more closely hit the target delta_mms.
 
             The initially calculated acceleration profile will be clipped repeatedly by this amount until
@@ -104,13 +106,14 @@ class AccelProfile:
             Constant acceleration that will be used between the acceleration ramp up and down.
         '''
         self.ramp_mmss = ramp_mmss
-        self.dx_mm = dx_mm
-        self.accel_dy_mm = accel_dy_mm
+        self.dt_s = dt_s
+        self.accel_dy_mmss = accel_dy_mmss
         self.const_accel_mmss = const_accel_mmss
-        ramp_velocity = sp.integrate.cumulative_trapezoid(ramp_mmss, dx=dx_mm, initial=0)
+        ramp_velocity = sp.integrate.cumulative_trapezoid(ramp_mmss, dx=dt_s, initial=0)
         self.ramp_stop_now_velocity = ramp_velocity * 2
         self.final_velocity_after_ramps = self.ramp_stop_now_velocity[-1]
 
+    @lru_cache
     def calc(self, delta_mms: float) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         '''
         delta_mms
@@ -121,8 +124,8 @@ class AccelProfile:
         ramp_stop_now_velocity = self.ramp_stop_now_velocity
         ramp_mmss = self.ramp_mmss
         const_accel_mmss = self.const_accel_mmss
-        dx_mm = self.dx_mm
-        accel_dy_mm = self.accel_dy_mm
+        dt_s = self.dt_s
+        accel_dy_mmss = self.accel_dy_mmss
 
         if delta_mms <= 0:
             raise Exception('delta_mms must be >= 0')
@@ -135,7 +138,7 @@ class AccelProfile:
             reached_accel = ramp_mmss[stop_index]
         else:
             constant_accel_distance = (delta_mms - ramp_stop_now_velocity[-1]) / const_accel_mmss
-            accel = np.r_[ramp_mmss, np.full(int(constant_accel_distance / dx_mm), ramp_stop_now_velocity[-1]), ramp_mmss[::-1]]
+            accel = np.r_[ramp_mmss, np.full(int(constant_accel_distance / dt_s), ramp_stop_now_velocity[-1]), ramp_mmss[::-1]]
 
             reached_accel = const_accel_mmss
 
@@ -143,28 +146,28 @@ class AccelProfile:
         # TODO: binary search across accel_dy sized chunks
         # TODO: clip or scale?
         while True:
-            velocity = sp.integrate.cumulative_trapezoid(accel, dx=dx_mm, initial=0)
+            velocity = sp.integrate.cumulative_trapezoid(accel, dx=dt_s, initial=0)
             final_velocity = velocity[-1]
             if final_velocity <= delta_mms:
                 break
 
-            reached_accel -= accel_dy_mm
+            reached_accel -= accel_dy_mmss
             accel = np.clip(accel, None, reached_accel)
 
         return accel, velocity
 
-delta_mms = 600
-dx = 0.2
+delta_mms = 12
+dt = 0.1
 accel_dy = 0.1
-ramp_distance = 1
-const_accel = 100
+ramp_time = 1
+const_accel = 6
 
-ramp_x = np.arange(0, ramp_distance + dx, dx)
+ramp_x = np.arange(0, ramp_time + dt, dt)
 ramp = np.interp(
     ramp_x,
     [
         0,
-        ramp_distance,
+        ramp_time,
     ],
     [
         0,
@@ -172,7 +175,7 @@ ramp = np.interp(
     ]
 )
 
-profile = AccelProfile(ramp, dx, accel_dy, const_accel)
+profile = AccelProfile(ramp, dt, accel_dy, const_accel)
 import time
 start = time.time()
 accel, velocity = profile.calc(delta_mms)
@@ -212,8 +215,7 @@ print(velocity[-1])
 # accel = np.diff(velocity)
 # position = np.cumsum(velocity)
 
-distance = np.arange(0, 10, dx)[:len(accel)]
-
+distance = np.arange(0, 100, dt)[:len(accel)]
 
 ax.plot(distance, accel, label='accel')
 ax.plot(distance, velocity, label='velocity')
