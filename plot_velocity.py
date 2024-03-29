@@ -1,85 +1,12 @@
 
+from functools import lru_cache
+
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy._typing import NDArray
 import numpy.typing as npt
 import scipy as sp
 
-slow_distance_mm = 0.5
-slow_speed_mms = 40
-accel_step_distance_mm = 0.5
-threshold_angle = 140
-min_segment_length_mm = 0.05
-
-target_speed_mms = 100
-
-fig, ax = plt.subplots()
-
-# accel_exponent = 3
-# accel_scale_y = 1
-# accel_scale_x = 1
-
-# distance = np.linspace(0, 10, 50)
-# feed_rate_mms = np.clip(
-#     slow_speed_mms + ((distance * accel_scale_x) ** accel_exponent * accel_scale_y),
-#     None,
-#     target_speed_mms
-# )
-# accel = np.diff(feed_rate_mms)
-
-# # ax.plot(distance, feed_rate_mms, label='a_velocity')
-# # ax.plot(distance[1:], accel, label='a_accel')
-
-
-# accel_exponent = 4
-# accel_scale_y = 1
-# accel_scale_x = 0.5
-
-# distance = np.linspace(0, 10, 50)
-# feed_rate_mms = np.clip(
-#     slow_speed_mms + ((distance * accel_scale_x) ** accel_exponent * accel_scale_y),
-#     None,
-#     target_speed_mms
-# )
-# accel = np.diff(feed_rate_mms)
-
-# ax.plot(distance, feed_rate_mms, label='b_velocity')
-# ax.plot(distance[1:], accel, label='b_accel')
-
-
-# linear
-# accel = np.interp(
-#     distance,
-#     [
-#         0,
-#         3,
-#         3,
-#         6,
-#         6
-#     ],
-#     [
-#         4,
-#         4,
-#         0,
-#         0,
-#         -4
-#     ]
-# )
-
-
-# todo: calculate how long to reach the desired speed
-
-# todo instead to make generic calc as integrating up what speed we would be at if we stopped now and ramped down
-#     this is just double the current speed as profile is identical mirror regardless of shape
-#     this does not work for higher order as its too late
-
-#     iterative solver?
-#     way to integrate from both ends even though don't know where end is yet, will know once meet in the middle?
-#     have integral of profile double it for ramp up and ramp down
-#     simply find on the doubled profile where we meete critera, start at top and if not enough add in constant accel region which is just box as calculated below
-# stop as soon as hit target
-
-from functools import lru_cache
 
 class AccelProfile:
     def __init__(self, ramp_mmss: npt.NDArray[np.float64], dt_s: float, accel_dy_mmss: float, const_accel_mmss: float):
@@ -187,61 +114,12 @@ print(time.time() - start)
 
 print(velocity[-1])
 
-
-
-
-# ramp_area = 0.5 * ramp_distance * max_accel
-# if target <= ramp_area * 2:
-
-#     print(target / (ramp_area * 2) * ramp_distance)
-#     raise Exception('oh now')
-# else:
-#     constant_accel_distance = (target - ramp_area * 2) / max_accel
-
-#     accel = np.interp(
-#         distance,
-#         [
-#             0,
-#             ramp_distance,
-#             ramp_distance + constant_accel_distance,
-#             ramp_distance + constant_accel_distance + ramp_distance,
-#         ],
-#         [
-#             0,
-#             max_accel,
-#             max_accel,
-#             0,
-#         ]
-#     )
-
-# velocity = sp.integrate.cumulative_trapezoid(accel, dx=dx)
-# velocity = np.trapz(accel, dx=dx)
-# accel = np.diff(velocity)
-# position = np.cumsum(velocity)
+fig, ax = plt.subplots()
 
 distance = np.arange(0, 100, dt_s)[:len(accel)]
 
 ax.plot(distance, accel, label='accel')
 ax.plot(distance, velocity, label='velocity')
-# ax.plot(distance, position, label='position')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ax.legend()
 plt.show()
