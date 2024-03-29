@@ -107,19 +107,25 @@ ramp_time_s = 0.01
 max_accel_mmss = 6000
 
 profile = SCurveAccelProfile(ramp_time_s, max_accel_mmss, dt_s, accel_dy_mmss)
+
 import time
 start = time.time()
 accel, velocity = profile.calc(delta_mms)
 print(time.time() - start)
 
-print(velocity[-1])
+print('final velocity', velocity[-1])
+
+position = sp.integrate.cumulative_trapezoid(velocity, dx=dt_s, initial=0)
+
+
 
 fig, ax = plt.subplots()
 
-distance = np.arange(0, 100, dt_s)[:len(accel)]
+time = np.arange(0, 100, dt_s)[:len(accel)]
 
-ax.plot(distance, accel, label='accel')
-ax.plot(distance, velocity, label='velocity')
+ax.plot(time, accel, label='accel')
+ax.plot(time, velocity, label='velocity')
+ax.plot(time, position, label='position')
 
 ax.legend()
 plt.show()
