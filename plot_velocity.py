@@ -45,7 +45,7 @@ class AccelProfile:
         self.final_velocity_after_ramps = self.ramp_stop_now_velocity[-1]
 
     @lru_cache(1024)
-    def _calc(self, delta_mms: float) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    def _calc_abs_delta(self, delta_mms: float) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         '''
         delta_mms
             Delta change in mm/s. This must be positive.
@@ -84,11 +84,15 @@ class AccelProfile:
 
         return accel, velocity
 
-    def calc(self, delta_mms: float) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
-        accel, velocity = self._calc(abs(delta_mms))
+    def calc(self, from_mms: float, to_mms: float) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+        delta_mms = to_mms - from_mms
+        accel, velocity = self._calc_abs_delta(abs(delta_mms))
 
         if delta_mms <= 0:
             velocity = velocity[::-1]
+            velocity = velocity + to_mms
+        else:
+            velocity = velocity + from_mms
 
         return accel, velocity
 
@@ -110,7 +114,6 @@ class SCurveAccelProfile(AccelProfile):
         )
         super().__init__(ramp_mmss, dt_s, accel_dy_mmss, max_accel_mmss)
 
-delta_mms = -100
 dt_s = 0.010
 accel_dy_mmss = 10.0
 ramp_time_s = 0.100
@@ -119,8 +122,9 @@ max_accel_mmss = 3000
 profile = SCurveAccelProfile(ramp_time_s, max_accel_mmss, dt_s, accel_dy_mmss)
 
 import time
+accel, velocity = profile.calc(200, 100)
 start = time.perf_counter()
-accel, velocity = profile.calc(delta_mms)
+accel, velocity = profile.calc(100, 200)
 position = sp.integrate.cumulative_trapezoid(velocity, dx=dt_s, initial=0)
 print(time.perf_counter() - start)
 print(np.stack((position, accel, velocity)))
