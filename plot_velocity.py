@@ -1,6 +1,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy._typing import NDArray
 import numpy.typing as npt
 import scipy as sp
 
@@ -156,26 +157,29 @@ class AccelProfile:
 
         return accel, velocity
 
+class SCurveAccelProfile(AccelProfile):
+    def __init__(self, ramp_time_s: float, max_accel_mmss: float, dt_s: float, accel_dy_mmss: float):
+        ramp_s = np.arange(0, ramp_time_s + dt_s, dt_s)
+        ramp_mmss = np.interp(
+            ramp_s,
+            [
+                0,
+                ramp_time_s,
+            ],
+            [
+                0,
+                max_accel_mmss,
+            ]
+        )
+        super().__init__(ramp_mmss, dt_s, accel_dy_mmss, max_accel_mmss)
+
 delta_mms = 100
 dt_s = 0.001
 accel_dy_mmss = 0.1
 ramp_time_s = 0.01
-const_accel_mmss = 6000
+max_accel_mmss = 6000
 
-ramp_x = np.arange(0, ramp_time_s + dt_s, dt_s)
-ramp = np.interp(
-    ramp_x,
-    [
-        0,
-        ramp_time_s,
-    ],
-    [
-        0,
-        const_accel_mmss,
-    ]
-)
-
-profile = AccelProfile(ramp, dt_s, accel_dy_mmss, const_accel_mmss)
+profile = SCurveAccelProfile(ramp_time_s, max_accel_mmss, dt_s, accel_dy_mmss)
 import time
 start = time.time()
 accel, velocity = profile.calc(delta_mms)
