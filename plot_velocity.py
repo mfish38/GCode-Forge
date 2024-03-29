@@ -2,10 +2,13 @@
 from functools import lru_cache
 
 import matplotlib.pyplot as plt
+
 import numpy as np
-from numpy._typing import NDArray
+from numpy import clip
 import numpy.typing as npt
+
 import scipy as sp
+from scipy.integrate import cumulative_trapezoid
 
 
 class AccelProfile:
@@ -37,7 +40,7 @@ class AccelProfile:
         self.dt_s = dt_s
         self.accel_dy_mmss = accel_dy_mmss
         self.const_accel_mmss = const_accel_mmss
-        ramp_velocity = sp.integrate.cumulative_trapezoid(ramp_mmss, dx=dt_s, initial=0)
+        ramp_velocity = cumulative_trapezoid(ramp_mmss, dx=dt_s, initial=0)
         self.ramp_stop_now_velocity = ramp_velocity * 2
         self.final_velocity_after_ramps = self.ramp_stop_now_velocity[-1]
 
@@ -74,13 +77,13 @@ class AccelProfile:
         # TODO: binary search across accel_dy sized chunks
         # TODO: clip or scale?
         while True:
-            velocity = sp.integrate.cumulative_trapezoid(accel, dx=dt_s, initial=0)
+            velocity = cumulative_trapezoid(accel, dx=dt_s, initial=0)
             final_velocity = velocity[-1]
             if final_velocity <= delta_mms:
                 break
 
             reached_accel -= accel_dy_mmss
-            accel = np.clip(accel, None, reached_accel)
+            accel = clip(accel, None, reached_accel)
 
         return accel, velocity
 
@@ -101,21 +104,22 @@ class SCurveAccelProfile(AccelProfile):
         super().__init__(ramp_mmss, dt_s, accel_dy_mmss, max_accel_mmss)
 
 delta_mms = 100
-dt_s = 0.001
-accel_dy_mmss = 0.1
-ramp_time_s = 0.01
-max_accel_mmss = 6000
+dt_s = 0.010
+accel_dy_mmss = 10.0
+ramp_time_s = 0.100
+max_accel_mmss = 3000
 
 profile = SCurveAccelProfile(ramp_time_s, max_accel_mmss, dt_s, accel_dy_mmss)
 
 import time
-start = time.time()
+start = time.perf_counter()
 accel, velocity = profile.calc(delta_mms)
-print(time.time() - start)
+position = sp.integrate.cumulative_trapezoid(velocity, dx=dt_s, initial=0)
+print(time.perf_counter() - start)
+print(np.stack((position, accel, velocity)))
 
 print('final velocity', velocity[-1])
 
-position = sp.integrate.cumulative_trapezoid(velocity, dx=dt_s, initial=0)
 
 
 
