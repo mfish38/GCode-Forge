@@ -44,11 +44,11 @@ class AccelProfile:
         self.ramp_stop_now_velocity = ramp_velocity * 2
         self.final_velocity_after_ramps = self.ramp_stop_now_velocity[-1]
 
-    @lru_cache
-    def calc(self, delta_mms: float) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    @lru_cache(1024)
+    def _calc(self, delta_mms: float) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         '''
         delta_mms
-            Delta change in mm/s. This must be positive. Simply multiply the output by -1 for de-acceleration.
+            Delta change in mm/s. This must be positive.
 
         Returns (accel, velocity)
         '''
@@ -57,9 +57,6 @@ class AccelProfile:
         const_accel_mmss = self.const_accel_mmss
         dt_s = self.dt_s
         accel_dy_mmss = self.accel_dy_mmss
-
-        if delta_mms <= 0:
-            raise Exception('delta_mms must be >= 0')
 
         if self.final_velocity_after_ramps >= delta_mms:
             stop_mask = np.where(ramp_stop_now_velocity >= delta_mms)[0]
@@ -87,6 +84,16 @@ class AccelProfile:
 
         return accel, velocity
 
+    def calc(self, delta_mms: float) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+        accel, velocity = self._calc(abs(delta_mms))
+
+        if delta_mms <= 0:
+            velocity = velocity[::-1]
+
+        return accel, velocity
+
+
+
 class SCurveAccelProfile(AccelProfile):
     def __init__(self, ramp_time_s: float, max_accel_mmss: float, dt_s: float, accel_dy_mmss: float):
         ramp_s = np.arange(0, ramp_time_s + dt_s, dt_s)
@@ -103,7 +110,7 @@ class SCurveAccelProfile(AccelProfile):
         )
         super().__init__(ramp_mmss, dt_s, accel_dy_mmss, max_accel_mmss)
 
-delta_mms = 100
+delta_mms = -100
 dt_s = 0.010
 accel_dy_mmss = 10.0
 ramp_time_s = 0.100
