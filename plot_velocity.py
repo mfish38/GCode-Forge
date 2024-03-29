@@ -138,7 +138,7 @@ class AccelProfile:
             reached_accel = ramp_mmss[stop_index]
         else:
             constant_accel_distance = (delta_mms - ramp_stop_now_velocity[-1]) / const_accel_mmss
-            accel = np.r_[ramp_mmss, np.full(int(constant_accel_distance / dt_s), ramp_stop_now_velocity[-1]), ramp_mmss[::-1]]
+            accel = np.r_[ramp_mmss, np.full(int(constant_accel_distance / dt_s), const_accel_mmss), ramp_mmss[::-1]]
 
             reached_accel = const_accel_mmss
 
@@ -156,26 +156,26 @@ class AccelProfile:
 
         return accel, velocity
 
-delta_mms = 12
-dt = 0.1
-accel_dy = 0.1
-ramp_time = 1
-const_accel = 6
+delta_mms = 100
+dt_s = 0.001
+accel_dy_mmss = 0.1
+ramp_time_s = 0.01
+const_accel_mmss = 6000
 
-ramp_x = np.arange(0, ramp_time + dt, dt)
+ramp_x = np.arange(0, ramp_time_s + dt_s, dt_s)
 ramp = np.interp(
     ramp_x,
     [
         0,
-        ramp_time,
+        ramp_time_s,
     ],
     [
         0,
-        const_accel,
+        const_accel_mmss,
     ]
 )
 
-profile = AccelProfile(ramp, dt, accel_dy, const_accel)
+profile = AccelProfile(ramp, dt_s, accel_dy_mmss, const_accel_mmss)
 import time
 start = time.time()
 accel, velocity = profile.calc(delta_mms)
@@ -215,7 +215,7 @@ print(velocity[-1])
 # accel = np.diff(velocity)
 # position = np.cumsum(velocity)
 
-distance = np.arange(0, 100, dt)[:len(accel)]
+distance = np.arange(0, 100, dt_s)[:len(accel)]
 
 ax.plot(distance, accel, label='accel')
 ax.plot(distance, velocity, label='velocity')
