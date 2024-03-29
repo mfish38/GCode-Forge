@@ -78,72 +78,82 @@ fig, ax = plt.subplots()
 #     simply find on the doubled profile where we meete critera, start at top and if not enough add in constant accel region which is just box as calculated below
 # stop as soon as hit target
 
+class AccelProfile:
+    def __init__(self, ramp_mmss: npt.NDArray[np.float64], dx_mm: float, accel_dy_mm: float, const_accel_mmss: float):
+        '''
+        ramp_mmss
+            Acceleration profile for ramping up acceleration from 0 to the constant acceleration value.
 
-# TODO: memoize for various target velocity abs delta from start to end
+            At the end of the profile, const_accel_mmss will be used as long as needed, and then acceleration
+            will be ramped down using a reversed version of the profile.
 
-def calc_velocity_profile(delta_mms: float, ramp_mmss: npt.NDArray[np.float64], dx_mm: float, accel_dy_mm: float, const_accel_mmss: float) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
-    '''
-    delta_mms
-        Delta change in mm/s. This must be positive. Simply multiply the output by -1 for de-acceleration.
+        dx_mm
+            Distance between acceleration profile elements and the output acceleration and velocity elements.
 
-    ramp_mmss
-        Acceleration profile for ramping up acceleration from 0 to the constant acceleration value.
+        accel_dy_mm
+            This is used to tune max acceleration reached to more closely hit the target delta_mms.
 
-        At the end of the profile, const_accel_mmss will be used as long as needed, and then acceleration
-        will be ramped down using a reversed version of the profile.
+            The initially calculated acceleration profile will be clipped repeatedly by this amount until
+            the final velocity delta is just under the desired delta_mms.
 
-    dx_mm
-        Distance between acceleration profile elements and the output acceleration and velocity elements.
+            This allows more accuracy than is allowed by the ramp/const_accel_mms values in the given dx_mm spacing.
+            It is also used to hit the desired velocity when the acceleration distance is less than 2 * the
+            distance of the ramp profile.
 
-    accel_dy_mm
-        This is used to tune max acceleration reached to more closely hit the target delta_mms.
+        const_accel_mmss
+            Constant acceleration that will be used between the acceleration ramp up and down.
+        '''
+        self.ramp_mmss = ramp_mmss
+        self.dx_mm = dx_mm
+        self.accel_dy_mm = accel_dy_mm
+        self.const_accel_mmss = const_accel_mmss
+        ramp_velocity = sp.integrate.cumulative_trapezoid(ramp_mmss, dx=dx_mm, initial=0)
+        self.ramp_stop_now_velocity = ramp_velocity * 2
+        self.final_velocity_after_ramps = self.ramp_stop_now_velocity[-1]
 
-        The initially calculated acceleration profile will be clipped repeatedly by this amount until
-        the final velocity delta is just under the desired delta_mms.
+    def calc(self, delta_mms: float) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+        '''
+        delta_mms
+            Delta change in mm/s. This must be positive. Simply multiply the output by -1 for de-acceleration.
 
-        This allows more accuracy than is allowed by the ramp/const_accel_mms values in the given dx_mm spacing.
-        It is also used to hit the desired velocity when the acceleration distance is less than 2 * the
-        distance of the ramp profile.
+        Returns (accel, velocity)
+        '''
+        ramp_stop_now_velocity = self.ramp_stop_now_velocity
+        ramp_mmss = self.ramp_mmss
+        const_accel_mmss = self.const_accel_mmss
+        dx_mm = self.dx_mm
+        accel_dy_mm = self.accel_dy_mm
 
-    const_accel_mmss
-        Constant acceleration that will be used between the acceleration ramp up and down.
+        if delta_mms <= 0:
+            raise Exception('delta_mms must be >= 0')
 
-    Returns (accel, velocity)
-    '''
-    if delta_mms <= 0:
-        raise Exception('delta_mms must be >= 0')
+        if self.final_velocity_after_ramps >= delta_mms:
+            stop_mask = np.where(ramp_stop_now_velocity >= delta_mms)[0]
+            stop_index = stop_mask[0]
+            accel = np.r_[ramp_mmss[:stop_index], ramp_mmss[stop_index::-1]]
 
-    ramp_velocity = sp.integrate.cumulative_trapezoid(ramp_mmss, dx=dx_mm, initial=0)
-    ramp_stop_now_velocity = ramp_velocity * 2
-    final_velocity_after_ramps = ramp_stop_now_velocity[-1]
+            reached_accel = ramp_mmss[stop_index]
+        else:
+            constant_accel_distance = (delta_mms - ramp_stop_now_velocity[-1]) / const_accel_mmss
+            accel = np.r_[ramp_mmss, np.full(int(constant_accel_distance / dx_mm), ramp_stop_now_velocity[-1]), ramp_mmss[::-1]]
 
-    if final_velocity_after_ramps >= delta_mms:
-        stop_mask = np.where(ramp_stop_now_velocity >= delta_mms)[0]
-        stop_index = stop_mask[0]
-        accel = np.r_[ramp_mmss[:stop_index], ramp_mmss[stop_index::-1]]
+            reached_accel = const_accel_mmss
 
-        reached_accel = ramp_mmss[stop_index]
-    else:
-        constant_accel_distance = (delta_mms - ramp_stop_now_velocity[-1]) / const_accel_mmss
-        accel = np.r_[ramp_mmss, np.full(int(constant_accel_distance / dx_mm), ramp_stop_now_velocity[-1]), ramp_mmss[::-1]]
+        # clip until the final velocity is just less than the target
+        # TODO: binary search across accel_dy sized chunks
+        # TODO: clip or scale?
+        while True:
+            velocity = sp.integrate.cumulative_trapezoid(accel, dx=dx_mm, initial=0)
+            final_velocity = velocity[-1]
+            if final_velocity <= delta_mms:
+                break
 
-        reached_accel = const_accel_mmss
+            reached_accel -= accel_dy_mm
+            accel = np.clip(accel, None, reached_accel)
 
-    # clip until the final velocity is just less than the target
-    # TODO: binary search across accel_dy sized chunks
-    # TODO: clip or scale?
-    while True:
-        velocity = sp.integrate.cumulative_trapezoid(accel, dx=dx_mm, initial=0)
-        final_velocity = velocity[-1]
-        if final_velocity <= delta_mms:
-            break
+        return accel, velocity
 
-        reached_accel -= accel_dy_mm
-        accel = np.clip(accel, None, reached_accel)
-
-    return accel, velocity
-
-delta_mms = 58
+delta_mms = 600
 dx = 0.2
 accel_dy = 0.1
 ramp_distance = 1
@@ -161,7 +171,12 @@ ramp = np.interp(
         const_accel,
     ]
 )
-accel, velocity = calc_velocity_profile(delta_mms, ramp, dx, accel_dy, const_accel)
+
+profile = AccelProfile(ramp, dx, accel_dy, const_accel)
+import time
+start = time.time()
+accel, velocity = profile.calc(delta_mms)
+print(time.time() - start)
 
 print(velocity[-1])
 
