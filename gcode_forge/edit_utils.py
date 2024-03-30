@@ -95,6 +95,9 @@ def apply_backward(start, stop, func, *args):
         if current_line is stop:
             break
 
+        if current_line is current_line.section.first_line:
+            break
+
         current_line = current_line.prev
         if not current_line:
             raise Exception('Reached beginning of file')
@@ -110,6 +113,9 @@ def apply_forward(start, stop, func, *args):
             break
 
         if current_line is stop:
+            break
+
+        if current_line is current_line.section.last_line:
             break
 
         current_line = current_line.next
