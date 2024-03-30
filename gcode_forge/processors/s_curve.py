@@ -91,7 +91,7 @@ def apply(gcode: GCodeFile, options):
 
     dt_s = 0.010
     accel_dy_mmss = 10.0
-    ramp_time_s = 0.100
+    ramp_time_s = 0.200
     max_accel_mmss = 3000
     junction_threshold_mms = 1.0
 
@@ -101,8 +101,8 @@ def apply(gcode: GCodeFile, options):
 
     section = gcode.first_section
     while section:
-        # if section.section_type not in ('outer wall', 'inner wall'):
-        if section.section_type not in ('outer wall',):
+        if section.section_type not in ('outer wall', 'inner wall'):
+        # if section.section_type not in ('outer wall',):
             section = section.next
             continue
 
