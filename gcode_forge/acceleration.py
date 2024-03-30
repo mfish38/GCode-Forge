@@ -44,6 +44,7 @@ class AccelerationProfile:
         ramp_velocity = cumulative_trapezoid(ramp_mmss, dx=dt_s, initial=0)
         self.ramp_stop_now_velocity = ramp_velocity * 2
         self.final_velocity_after_ramps = self.ramp_stop_now_velocity[-1]
+        self.places = None
 
     @lru_cache(1024)
     def _calc_abs_delta(self, delta_mms: float) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
@@ -89,6 +90,10 @@ class AccelerationProfile:
 
     def calc(self, from_mms: float, to_mms: float) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         delta_mms = to_mms - from_mms
+
+        # Better lru_cache hit rate for slight loss in accuracy
+        delta_mms = round(delta_mms, self.places)
+
         accel, velocity, position = self._calc_abs_delta(abs(delta_mms))
 
         if delta_mms <= 0:

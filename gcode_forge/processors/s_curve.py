@@ -7,8 +7,6 @@ from ..parser import GCodeFile, Line
 from ..edit_utils import split_distance_back, split_distance_forward, next_continuous_move, apply_forward, apply_backward
 from ..acceleration import SCurveAcceleration
 
-FEED_MMS_EPSILON = 0.001 * 60
-
 def calc_junction_speed(max_accel_mmss, deviation, cos_theta, desired_feed_mms):
     # https://onehossshay.wordpress.com/2011/09/24/improving_grbl_cornering_algorithm/
 
@@ -25,6 +23,8 @@ def calc_junction_speed(max_accel_mmss, deviation, cos_theta, desired_feed_mms):
 
 def accelerate_backward(line: Line, from_mms: float, min_segment_length_mm: float, profile: SCurveAcceleration):
     accel, velocity, position = profile.calc(from_mms, line.annotation.desired_feed_mms)
+
+    line.params['F'] = line.annotation.desired_feed_mms * 60
 
     current_start = line
     for dx, set_velocity in zip(np.diff(position), velocity[1:]):
@@ -51,6 +51,7 @@ def accelerate_backward(line: Line, from_mms: float, min_segment_length_mm: floa
 def accelerate_forward(line: Line, from_mms: float, min_segment_length_mm: float, profile: SCurveAcceleration):
     accel, velocity, position = profile.calc(from_mms, line.annotation.desired_feed_mms)
 
+    slow_cut = None
     current_start = line
     first = True
     for dx, set_velocity in zip(np.diff(position), velocity[1:]):
@@ -80,16 +81,7 @@ def accelerate_forward(line: Line, from_mms: float, min_segment_length_mm: float
     return line
 
 def apply(gcode: GCodeFile, options):
-    # additional_slow_distance_mm = options['additional_slow_distance_mm']
-    # slow_speed_mms = options['slow_speed_mms']
-    # accel_step_distance_mm = options['accel_step_distance_mm']
-    # threshold_angle = options['threshold_angle']
     # min_segment_length_mm = options['min_segment_length_mm']
-
-    # accel_exponent = options['accel_exponent']
-    # accel_scale_y = options['accel_scale_y']
-    # accel_scale_x = options['accel_scale_x']
-
 
     min_segment_length = 0.0001
 
@@ -99,6 +91,7 @@ def apply(gcode: GCodeFile, options):
     accel_dy_mmss = 10.0
     ramp_time_s = 0.100
     max_accel_mmss = 3000
+    junction_threshold_mms = 1.0
 
     junction_deviation = (square_corner_velocity_mms**2) * (math.sqrt(2) - 1) / max_accel_mmss
 
@@ -106,7 +99,8 @@ def apply(gcode: GCodeFile, options):
 
     section = gcode.first_section
     while section:
-        if section.section_type not in ('outer wall', 'inner wall'):
+        # if section.section_type not in ('outer wall', 'inner wall'):
+        if section.section_type not in ('outer wall',):
             section = section.next
             continue
 
@@ -120,7 +114,7 @@ def apply(gcode: GCodeFile, options):
 
             desired_feed_mms = line.annotation.desired_feed_mms
             junction_speed_mms = calc_junction_speed(max_accel_mmss, junction_deviation, line.annotation.cos_theta, desired_feed_mms)
-            if desired_feed_mms - junction_speed_mms < FEED_MMS_EPSILON:
+            if abs(desired_feed_mms - junction_speed_mms) < junction_threshold_mms:
                 if line is section.last_line:
                     break
                 line = line.next
