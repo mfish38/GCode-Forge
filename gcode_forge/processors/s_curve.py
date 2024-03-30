@@ -76,14 +76,16 @@ def accelerate_forward(line: Line, from_mms: float, min_segment_length_mm: float
 
     # Now that acceleration has finished, set the feed rate to the desired feed rate.
     if slow_cut:
-        slow_cut.section.insert_after(slow_cut, Line(f'G1 F{slow_cut.annotation.desired_feed_mms * 60} ; restore'))
+        next_move = next_continuous_move('moving_extrude', slow_cut)
+        if next_move:
+            next_move.params['F'] = next_move.annotation.desired_feed_mms * 60
 
     return line
 
 def apply(gcode: GCodeFile, options):
     # min_segment_length_mm = options['min_segment_length_mm']
 
-    min_segment_length = 0.0001
+    min_segment_length = 0.001
 
     square_corner_velocity_mms = 10
 
