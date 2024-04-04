@@ -9,7 +9,7 @@ macros: |
   {% set INFILL_PA = 0.26 %}
 
   {% set SHELL_PA_SMOOTH = 0.01 %}
-  {% set INNER_WALL_PA_SMOOTH = 0.01 %}
+  {% set INNER_WALL_PA_SMOOTH = 0.02 %}
   {% set INFILL_PA_SMOOTH = 0.04 %}
 
   {% set SHELL_GCODE %}
