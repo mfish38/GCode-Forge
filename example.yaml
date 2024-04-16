@@ -1,15 +1,15 @@
 
 macros: |
-  {% set SHELL_TEMP = 250 %}
-  {% set INNER_WALL_TEMP = 250 %}
-  {% set INFILL_TEMP = 250 %}
+  {% set SHELL_TEMP = 255 %}
+  {% set INNER_WALL_TEMP = 255 %}
+  {% set INFILL_TEMP = 255 %}
 
-  {% set SHELL_PA = 0.38 %}
-  {% set INNER_WALL_PA = 0.34 %}
-  {% set INFILL_PA = 0.26 %}
+  {% set SHELL_PA = 0.32 %}
+  {% set INNER_WALL_PA = 0.22 %}
+  {% set INFILL_PA = 0.22 %}
 
   {% set SHELL_PA_SMOOTH = 0.01 %}
-  {% set INNER_WALL_PA_SMOOTH = 0.02 %}
+  {% set INNER_WALL_PA_SMOOTH = 0.01 %}
   {% set INFILL_PA_SMOOTH = 0.04 %}
 
   {% set SHELL_GCODE %}
