@@ -54,3 +54,5 @@ processors:
       {{ macros.SHELL_GCODE }}
     support: |
       {{ macros.INFILL_GCODE }}
+    support interface: |
+      {{ macros.INFILL_GCODE }}
