@@ -1,8 +1,9 @@
 
 from dataclasses import dataclass
+from typing import TypeAlias
 
-type Point2D = tuple[float, float]
-type Vector2D = tuple[float, float]
+Point2D: TypeAlias = tuple[float, float]
+Vector2D: TypeAlias = tuple[float, float]
 
 @dataclass(slots=True)
 class Annotation:
@@ -138,7 +139,7 @@ class Line:
         parts = [
             self.code,
             *params,
-            *(f'{k}={'' if v is None else v}' for k, v in self.eqparams.items()),
+            *(f'''{k}={'' if v is None else v}''' for k, v in self.eqparams.items()),
             f';{self.comment}' if self.comment else '',
         ]
         return ' '.join(x for x in parts if x is not None)
