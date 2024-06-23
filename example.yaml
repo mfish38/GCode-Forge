@@ -1,30 +1,23 @@
 
 macros: |
-  {% set SHELL_TEMP = 255 %}
-  {% set INNER_WALL_TEMP = 255 %}
-  {% set INFILL_TEMP = 255 %}
-
-  {% set SHELL_PA = 0.30 %}
-  {% set INNER_WALL_PA = 0.24 %}
-  {% set INFILL_PA = 0.24 %}
+  {% set SHELL_PA = 0.22 %}
+  {% set INNER_WALL_PA = 0.22 %}
+  {% set INFILL_PA = 0.22 %}
 
   {% set SHELL_PA_SMOOTH = 0.01 %}
-  {% set INNER_WALL_PA_SMOOTH = 0.01 %}
+  {% set INNER_WALL_PA_SMOOTH = 0.02 %}
   {% set INFILL_PA_SMOOTH = 0.04 %}
 
   {% set SHELL_GCODE %}
       SET_PRESSURE_ADVANCE ADVANCE={{ SHELL_PA }} SMOOTH_TIME={{ SHELL_PA_SMOOTH }}
-      M104 S{{ SHELL_TEMP }}
   {% endset %}
 
   {% set INNER_WALL_GCODE %}
       SET_PRESSURE_ADVANCE ADVANCE={{ INNER_WALL_PA }} SMOOTH_TIME={{ INNER_WALL_PA_SMOOTH }}
-      M104 S{{ INNER_WALL_TEMP }}
   {% endset %}
 
   {% set INFILL_GCODE %}
       SET_PRESSURE_ADVANCE ADVANCE={{ INFILL_PA }} SMOOTH_TIME={{ INFILL_PA_SMOOTH }}
-      M104 S{{ INFILL_TEMP }}
   {% endset %}
 processors:
   line_type_gcode:
